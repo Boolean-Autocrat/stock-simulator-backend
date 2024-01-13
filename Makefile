@@ -1,5 +1,5 @@
 sqlc:
-	docker run --rm -v "%cd%:/src" -w /src sqlc/sqlc generate
+	go get github.com/sqlc-dev/sqlc/cmd/sqlc
 devdb:
 	docker run --rm -d --name sms_db -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres:16-alpine3.19
 dropdb:
