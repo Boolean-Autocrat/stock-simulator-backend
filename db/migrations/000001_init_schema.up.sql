@@ -11,6 +11,7 @@ CREATE TABLE "users" (
 
 CREATE TABLE "stocks" (
   "id" uuid DEFAULT uuid_generate_v4(),
+  "name" varchar,
   "symbol" varchar,
   "price" decimal,
   "is_crypto" bool,

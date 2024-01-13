@@ -45,6 +45,7 @@ type PriceHistory struct {
 
 type Stock struct {
 	ID       uuid.UUID      `json:"id"`
+	Name     sql.NullString `json:"name"`
 	Symbol   sql.NullString `json:"symbol"`
 	Price    sql.NullString `json:"price"`
 	IsCrypto sql.NullBool   `json:"isCrypto"`

@@ -1,14 +1,20 @@
 -- name: CreateStock :one
-INSERT INTO stocks (symbol, price, is_crypto, is_stock) VALUES ($1, $2, $3, $4) RETURNING *;
+INSERT INTO stocks (name, symbol, price, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: GetStock :one
-SELECT * FROM stocks WHERE symbol = $1;
+SELECT * FROM stocks WHERE name = $1 AND is_crypto = $2 AND is_stock = $3 AND symbol = $4 AND price = $5;
 
 -- name: GetStocks :many
 SELECT * FROM stocks WHERE is_crypto = $1 AND is_stock = $2;
 
--- name: GetStocksBySymbol :many
-SELECT * FROM stocks WHERE symbol LIKE $1;
+-- name: SearchStocks :many
+SELECT * FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%';
 
--- name: GetStocksByName :many
-SELECT * FROM stocks WHERE symbol LIKE $1;
+-- name: GetStockPriceHistory :many
+SELECT * FROM price_history WHERE stock_id = $1;
+
+-- name: GetStockPriceHistoryByDate :many
+SELECT * FROM price_history WHERE stock_id = $1 AND price_at >= $2 AND price_at <= $3;
+
+-- name: CreatePriceHistory :one
+INSERT INTO price_history (stock_id, price) VALUES ($1, $2) RETURNING *;

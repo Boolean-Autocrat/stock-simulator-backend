@@ -30,6 +30,10 @@ type Service struct {
 	queries *db.Queries
 }
 
+func NewService(queries *db.Queries) *Service {
+	return &Service{queries: queries}
+}
+
 type UserInfo struct {
 	Sub           string `json:"sub"`
 	Name          string `json:"name"`
@@ -39,10 +43,6 @@ type UserInfo struct {
 	Picture       string `json:"picture"`
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
-}
-
-func NewService(queries *db.Queries) *Service {
-	return &Service{queries: queries}
 }
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
@@ -80,7 +80,6 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
-	// handle user info
 
 	c.JSON(http.StatusOK, gin.H{"message": "Google Sign-In successful"})
 }

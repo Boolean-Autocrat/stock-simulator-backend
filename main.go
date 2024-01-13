@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/stocks"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/user/auth"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -23,11 +25,12 @@ func main() {
 	}
 
 	queries := db.New(postgres.DB)
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run()
+	authService := auth.NewService(queries)
+	stockService := stocks.NewService(queries)
+
+	router := gin.Default()
+	authService.RegisterHandlers(router)
+	stockService.RegisterHandlers(router)
+
+	router.Run()
 }
