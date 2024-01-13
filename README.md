@@ -1,3 +1,8 @@
+# DB Diagram
+<div align="center">
+<img src="./db_design.png" width="600">
+</div>
+
 # Setup
 
 - Copy the `.env.example` file to `.env`
