@@ -1,0 +1,7 @@
+.env
+node_modules
+*.exe
+*.exe~
+package-lock.json
+postgres-data
+credentials_dev.json
