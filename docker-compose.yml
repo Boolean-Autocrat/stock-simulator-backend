@@ -16,7 +16,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "3000:3000"
     environment:
       - DB_SOURCE=postgresql://postgres:postgres@postgres:5432/sms_db?sslmode=disable
     depends_on:
