@@ -13,8 +13,11 @@ type Service struct {
 	queries *db.Queries
 }
 
-func TokenMiddleware() gin.HandlerFunc {
-	var s Service
+func NewService(queries *db.Queries) *Service {
+	return &Service{queries: queries}
+}
+
+func (s *Service) TokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.FullPath() == "/auth/google/login" || c.FullPath() == "/auth/google/callback" {
 			c.Next()
@@ -64,7 +67,6 @@ func TokenMiddleware() gin.HandlerFunc {
 			c.JSON(http.StatusOK, gin.H{"freshToken": "true"})
 		} else {
 			c.Set("userID", tokenData.UserID)
-			c.JSON(http.StatusOK, gin.H{"freshToken": "false"})
 			c.Next()
 		}
 	}

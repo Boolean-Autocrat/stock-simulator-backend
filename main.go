@@ -29,14 +29,14 @@ func main() {
 	authService := userAuth.NewService(queries)
 	stockService := stocks.NewService(queries)
 
-	gin.SetMode(gin.ReleaseMode)
+	// gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "OK",
 		})
 	})
-	router.Use(middleware.TokenMiddleware())
+	router.Use(middleware.NewService(queries).TokenMiddleware())
 	authService.RegisterHandlers(router)
 	stockService.RegisterHandlers(router)
 

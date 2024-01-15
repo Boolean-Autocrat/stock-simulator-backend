@@ -13,8 +13,12 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users
-( full_name, email, picture) 
-VALUES ( $1, $2, $3) RETURNING id, full_name, email, picture, balance
+  (full_name, email, picture) 
+VALUES 
+  ($1, $2, $3) 
+ON CONFLICT (email) DO UPDATE
+  SET full_name = excluded.full_name, picture = excluded.picture
+RETURNING id, full_name, email, picture, balance
 `
 
 type CreateUserParams struct {
@@ -37,14 +41,20 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, full_name, email, picture, balance FROM users WHERE id = $1
+SELECT full_name, email, picture, balance FROM users WHERE id = $1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
+type GetUserRow struct {
+	FullName string `json:"fullName"`
+	Email    string `json:"email"`
+	Picture  string `json:"picture"`
+	Balance  string `json:"balance"`
+}
+
+func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (GetUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
-	var i User
+	var i GetUserRow
 	err := row.Scan(
-		&i.ID,
 		&i.FullName,
 		&i.Email,
 		&i.Picture,

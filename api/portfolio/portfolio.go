@@ -3,9 +3,9 @@ package portfolio
 import (
 	"net/http"
 
-	"github.com/Boolean-Autocrat/stock-simulator-backend/api/utils"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -23,9 +23,9 @@ func (s *Service) RegisterHandlers(router *gin.Engine) {
 }
 
 func (s *Service) GetPortfolio(c *gin.Context) {
-	userId, _ := utils.GetUserfromContext(c)
+	userId, _ := c.Get("userID")
 	var params db.GetPortfolioParams
-	params.UserID = userId
+	params.UserID = userId.(uuid.UUID)
 	if err := c.ShouldBindJSON(&params); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

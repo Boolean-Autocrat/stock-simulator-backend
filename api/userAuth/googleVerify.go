@@ -53,7 +53,7 @@ func verifyIDToken(idToken string) (bool, error) {
 		// find public key for token
 		kid, ok := token.Header["kid"].(string)
 		if !ok {
-			return nil, errors.New("Missing key ID (kid) in token header")
+			return nil, errors.New("missing key ID (kid) in token header")
 		}
 
 		for _, key := range jwks.Keys {
@@ -75,7 +75,7 @@ func verifyIDToken(idToken string) (bool, error) {
 				}, nil
 			}
 		}
-		return nil, errors.New("Unable to find matching key")
+		return nil, errors.New("unable to find matching key")
 	})
 
 	if err != nil {

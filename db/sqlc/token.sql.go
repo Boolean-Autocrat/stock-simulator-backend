@@ -13,7 +13,11 @@ import (
 )
 
 const createAccessToken = `-- name: CreateAccessToken :one
-INSERT INTO access_tokens (user_id, token, expires_at) VALUES ($1, $2, $3) RETURNING id, user_id, token, expires_at
+INSERT INTO access_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE
+SET token = excluded.token, expires_at = excluded.expires_at
+RETURNING id, user_id, token, expires_at
 `
 
 type CreateAccessTokenParams struct {
@@ -35,7 +39,11 @@ func (q *Queries) CreateAccessToken(ctx context.Context, arg CreateAccessTokenPa
 }
 
 const createRefreshToken = `-- name: CreateRefreshToken :one
-INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3) RETURNING id, user_id, token, expires_at
+INSERT INTO refresh_tokens (user_id, token, expires_at)
+VALUES ($1, $2, $3)
+ON CONFLICT (user_id) DO UPDATE
+SET token = excluded.token, expires_at = excluded.expires_at
+RETURNING id, user_id, token, expires_at
 `
 
 type CreateRefreshTokenParams struct {
@@ -91,18 +99,18 @@ func (q *Queries) GetRefreshToken(ctx context.Context, userID uuid.UUID) (Refres
 }
 
 const getTokenData = `-- name: GetTokenData :one
-SELECT id, user_id, token, expires_at FROM access_tokens WHERE token = $1
+SELECT user_id, expires_at FROM access_tokens WHERE token = $1
 `
 
-func (q *Queries) GetTokenData(ctx context.Context, token string) (AccessToken, error) {
+type GetTokenDataRow struct {
+	UserID    uuid.UUID `json:"userId"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
+func (q *Queries) GetTokenData(ctx context.Context, token string) (GetTokenDataRow, error) {
 	row := q.db.QueryRowContext(ctx, getTokenData, token)
-	var i AccessToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-	)
+	var i GetTokenDataRow
+	err := row.Scan(&i.UserID, &i.ExpiresAt)
 	return i, err
 }
 

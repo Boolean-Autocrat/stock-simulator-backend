@@ -68,9 +68,9 @@ type Stock struct {
 }
 
 type User struct {
-	ID       uuid.UUID      `json:"id"`
-	FullName string         `json:"fullName"`
-	Email    string         `json:"email"`
-	Picture  string         `json:"picture"`
-	Balance  sql.NullString `json:"balance"`
+	ID       uuid.UUID `json:"id"`
+	FullName string    `json:"fullName"`
+	Email    string    `json:"email"`
+	Picture  string    `json:"picture"`
+	Balance  string    `json:"balance"`
 }
