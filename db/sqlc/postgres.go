@@ -11,8 +11,8 @@ type Postgres struct {
 	DB *sql.DB
 }
 
-func NewPostgres(user, password, dbname string) (*Postgres, error) {
-	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s port=5432 sslmode=disable", user, password, dbname))
+func NewPostgres(user, password, dbname, host string) (*Postgres, error) {
+	db, err := sql.Open("postgres", fmt.Sprintf("user=%s password=%s dbname=%s port=5432 host=%s sslmode=disable", user, password, dbname, host))
 	if err != nil {
 		return nil, err
 	}
