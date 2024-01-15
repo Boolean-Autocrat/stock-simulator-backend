@@ -1,0 +1,146 @@
+{{ define "index.tmpl" }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+
+<body class="m-2 dark:bg-gray-900">
+    <div class=" flex justify-end m-2">
+        <button id="theme-toggle" type="button"
+            class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
+            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+            </svg>
+            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"
+                xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                    fill-rule="evenodd" clip-rule="evenodd"></path>
+            </svg>
+        </button>
+    </div>
+    <h1
+        class="mb-4 text-3xl font-extrabold leading-none tracking-tight text-blue-600 dark:text-blue-500 md:text-5xl lg:text-6xl">
+        Admin Dashboard</h1>
+    <div class="relative overflow-x-auto shadow-md sm:rounded-lg max-w-5xl mx-auto">
+        <h3 class="text-4xl mb-3 font-bold dark:text-white">Stocks/Crypto</h3>
+        <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <tr>
+                    <th scope="col" class="px-6 py-3">
+                        Name
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Symbol
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Price
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Quantity
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Type
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="stock-table-body">
+                {{ if .stocks }}
+                {{ range .stocks }}
+                <tr
+                    class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
+                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                        {{ .Name }}
+                    </th>
+                    <td class="px-6 py-4">
+                        {{ .Symbol }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ .Price }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ .Quantity }}
+                    </td>
+                    {{ if eq .IsStock true }}
+                    <td class="px-6 py-4">
+                        Stock
+                    </td>
+                    {{ else }}
+                    <td class="px-6 py-4">
+                        Crypto
+                    </td>
+                    {{ end }}
+                </tr>
+                {{ end }}
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    <div class="max-w-3xl mx-auto mt-4">
+        <h3 class="text-4xl mb-3 font-bold dark:text-white">Add a Stock</h3>
+        <form hx-on::after-request="this.reset()" hx-post="/admin/stock" hx-target="#stock-table-body"
+            hx-swap="beforeend">
+            <div class="grid gap-6 mb-6 md:grid-cols-2">
+                <div>
+                    <label for="stock_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Stock
+                        name</label>
+                    <input name="name" type="text" id="stock_name"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="Alphabet Inc." required>
+                </div>
+                <div>
+                    <label for="symbol"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Symbol</label>
+                    <input name="symbol" type="text" id="symbol"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="GOOGL" required>
+                </div>
+                <div>
+                    <label for="price"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Price</label>
+                    <input name="price" type="text" id="price"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="INR" required>
+                </div>
+                <div>
+                    <label for="quantity"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Quantity</label>
+                    <input name="quantity" type="number" id="quantity"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        placeholder="100" required>
+                </div>
+                <div>
+                    <label for="stock-crypto"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Select an
+                        option</label>
+                    <select name="stock-crypto" id="stock-crypto"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        <option selected>Choose a type</option>
+                        <option value="stock">Stock</option>
+                        <option value="crypto">Crypto</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit"
+                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+        </form>
+    </div>
+    <script src="/assets/js/htmx.min.js"></script>
+    <script src="/assets/js/darkmode.js"></script>
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+</body>
+
+</html>
+{{ end }}

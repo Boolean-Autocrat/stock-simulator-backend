@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/middleware"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/stocks"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/userAuth"
@@ -26,17 +27,20 @@ func main() {
 	}
 
 	queries := db.New(postgres.DB)
+	adminService := admin.NewService(queries)
 	authService := userAuth.NewService(queries)
 	stockService := stocks.NewService(queries)
 
-	// gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+	router.LoadHTMLGlob("templates/*")
+	router.Static("/assets", "./assets")
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "OK",
 		})
 	})
 	router.Use(middleware.NewService(queries).TokenMiddleware())
+	adminService.RegisterHandlers(router)
 	authService.RegisterHandlers(router)
 	stockService.RegisterHandlers(router)
 

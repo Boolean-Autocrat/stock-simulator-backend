@@ -2,7 +2,6 @@ package stocks
 
 import (
 	"net/http"
-	"strconv"
 	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -67,13 +66,13 @@ func (s *Service) GetStock(c *gin.Context) {
 }
 
 func (s *Service) GetStocks(c *gin.Context) {
-	isCrypto, _ := strconv.ParseBool(c.Query("is_crypto"))
-	isStock, _ := strconv.ParseBool(c.Query("is_stock"))
-	params := db.GetStocksParams{
-		IsCrypto: isCrypto,
-		IsStock:  isStock,
-	}
-	stocks, err := s.queries.GetStocks(c, params)
+	// isCrypto, _ := strconv.ParseBool(c.Query("is_crypto"))
+	// isStock, _ := strconv.ParseBool(c.Query("is_stock"))
+	// params := db.GetStocksParams{
+	// 	IsCrypto: isCrypto,
+	// 	IsStock:  isStock,
+	// }
+	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -34,13 +34,14 @@ func (q *Queries) CreatePriceHistory(ctx context.Context, arg CreatePriceHistory
 }
 
 const createStock = `-- name: CreateStock :one
-INSERT INTO stocks (name, symbol, price, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, symbol, price, is_crypto, is_stock, quantity
+INSERT INTO stocks (name, symbol, price, quantity, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, symbol, price, is_crypto, is_stock, quantity
 `
 
 type CreateStockParams struct {
 	Name     string `json:"name"`
 	Symbol   string `json:"symbol"`
 	Price    string `json:"price"`
+	Quantity int32  `json:"quantity"`
 	IsCrypto bool   `json:"isCrypto"`
 	IsStock  bool   `json:"isStock"`
 }
@@ -50,6 +51,7 @@ func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock
 		arg.Name,
 		arg.Symbol,
 		arg.Price,
+		arg.Quantity,
 		arg.IsCrypto,
 		arg.IsStock,
 	)
@@ -170,16 +172,11 @@ func (q *Queries) GetStockPriceHistoryByDate(ctx context.Context, arg GetStockPr
 }
 
 const getStocks = `-- name: GetStocks :many
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE is_crypto = $1 AND is_stock = $2
+SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks
 `
 
-type GetStocksParams struct {
-	IsCrypto bool `json:"isCrypto"`
-	IsStock  bool `json:"isStock"`
-}
-
-func (q *Queries) GetStocks(ctx context.Context, arg GetStocksParams) ([]Stock, error) {
-	rows, err := q.db.QueryContext(ctx, getStocks, arg.IsCrypto, arg.IsStock)
+func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
+	rows, err := q.db.QueryContext(ctx, getStocks)
 	if err != nil {
 		return nil, err
 	}

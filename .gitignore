@@ -5,3 +5,4 @@ postgres-data
 credentials.json
 *.pem
 tmp
+node_modules
