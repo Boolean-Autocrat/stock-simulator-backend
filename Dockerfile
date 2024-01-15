@@ -14,6 +14,7 @@ COPY --from=builder /app/migrate.linux-amd64 ./migrate
 COPY .env .
 COPY start.sh .
 COPY wait-for-it.sh .
+COPY templates .
 RUN chmod +x start.sh
 RUN chmod +x wait-for-it.sh
 COPY db/migrations ./migration
