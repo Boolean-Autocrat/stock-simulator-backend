@@ -11,51 +11,66 @@ import (
 	"github.com/google/uuid"
 )
 
+type AccessToken struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"userId"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
+}
+
 type News struct {
 	ID          uuid.UUID      `json:"id"`
-	Title       sql.NullString `json:"title"`
-	Description sql.NullString `json:"description"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
 	Photo       sql.NullString `json:"photo"`
-	Likes       sql.NullInt32  `json:"likes"`
-	Dislikes    sql.NullInt32  `json:"dislikes"`
+	Likes       int32          `json:"likes"`
+	Dislikes    int32          `json:"dislikes"`
 }
 
 type NewsSentiment struct {
-	ID        uuid.UUID     `json:"id"`
-	ArticleID uuid.NullUUID `json:"articleId"`
-	UserID    uuid.NullUUID `json:"userId"`
-	Like      sql.NullBool  `json:"like"`
-	Dislike   sql.NullBool  `json:"dislike"`
+	ID        uuid.UUID `json:"id"`
+	ArticleID uuid.UUID `json:"articleId"`
+	UserID    uuid.UUID `json:"userId"`
+	Like      bool      `json:"like"`
+	Dislike   bool      `json:"dislike"`
 }
 
 type Portfolio struct {
-	ID            uuid.UUID      `json:"id"`
-	UserID        uuid.NullUUID  `json:"userId"`
-	StockID       uuid.NullUUID  `json:"stockId"`
-	PurchasePrice sql.NullString `json:"purchasePrice"`
-	PurchasedAt   time.Time      `json:"purchasedAt"`
+	ID            uuid.UUID `json:"id"`
+	UserID        uuid.UUID `json:"userId"`
+	StockID       uuid.UUID `json:"stockId"`
+	PurchasePrice string    `json:"purchasePrice"`
+	PurchasedAt   time.Time `json:"purchasedAt"`
 }
 
 type PriceHistory struct {
-	ID      uuid.UUID      `json:"id"`
-	StockID uuid.NullUUID  `json:"stockId"`
-	Price   sql.NullString `json:"price"`
-	PriceAt time.Time      `json:"priceAt"`
+	ID      uuid.UUID `json:"id"`
+	StockID uuid.UUID `json:"stockId"`
+	Price   string    `json:"price"`
+	PriceAt time.Time `json:"priceAt"`
+}
+
+type RefreshToken struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    uuid.UUID `json:"userId"`
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expiresAt"`
 }
 
 type Stock struct {
-	ID       uuid.UUID      `json:"id"`
-	Name     sql.NullString `json:"name"`
-	Symbol   sql.NullString `json:"symbol"`
-	Price    sql.NullString `json:"price"`
-	IsCrypto sql.NullBool   `json:"isCrypto"`
-	IsStock  sql.NullBool   `json:"isStock"`
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Symbol   string    `json:"symbol"`
+	Price    string    `json:"price"`
+	IsCrypto bool      `json:"isCrypto"`
+	IsStock  bool      `json:"isStock"`
+	Quantity int32     `json:"quantity"`
 }
 
 type User struct {
 	ID       uuid.UUID      `json:"id"`
-	FullName sql.NullString `json:"fullName"`
-	Email    sql.NullString `json:"email"`
-	Picture  sql.NullString `json:"picture"`
+	FullName string         `json:"fullName"`
+	Email    string         `json:"email"`
+	Picture  string         `json:"picture"`
 	Balance  sql.NullString `json:"balance"`
 }

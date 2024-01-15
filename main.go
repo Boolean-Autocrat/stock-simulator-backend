@@ -4,8 +4,9 @@ import (
 	"log"
 	"os"
 
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/middleware"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/stocks"
-	"github.com/Boolean-Autocrat/stock-simulator-backend/api/user/auth"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/userAuth"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -19,16 +20,23 @@ func init() {
 }
 
 func main() {
-	postgres, err := db.NewPostgres(os.Getenv("DB_HOST"), os.Getenv("DB_USER"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"))
+	postgres, err := db.NewPostgres(os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
 	queries := db.New(postgres.DB)
-	authService := auth.NewService(queries)
+	authService := userAuth.NewService(queries)
 	stockService := stocks.NewService(queries)
 
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "OK",
+		})
+	})
+	router.Use(middleware.TokenMiddleware())
 	authService.RegisterHandlers(router)
 	stockService.RegisterHandlers(router)
 

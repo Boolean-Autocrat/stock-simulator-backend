@@ -1,4 +1,4 @@
-package auth
+package userAuth
 
 import (
 	"crypto/rsa"

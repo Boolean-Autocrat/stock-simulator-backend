@@ -1,4 +1,4 @@
-package auth
+package userAuth
 
 import (
 	"context"
@@ -80,8 +80,48 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
+	// save user info to database
+	user, err := s.queries.CreateUser(c, db.CreateUserParams{
+		FullName: userInfo.Name,
+		Email:    userInfo.Email,
+		Picture:  userInfo.Picture,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Google Sign-In successful"})
+	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
+		UserID:    user.ID,
+		Token:     token.AccessToken,
+		ExpiresAt: token.Expiry,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
+		return
+	}
+
+	_, err = s.queries.CreateRefreshToken(c, db.CreateRefreshTokenParams{
+		UserID:    user.ID,
+		Token:     token.RefreshToken,
+		ExpiresAt: token.Expiry,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token"})
+		return
+	}
+
+	returnParams := gin.H{
+		"accessToken": token.AccessToken,
+		"user": gin.H{
+			"id":       user.ID,
+			"fullName": user.FullName,
+			"email":    user.Email,
+			"picture":  user.Picture,
+		},
+	}
+
+	c.JSON(http.StatusOK, returnParams)
 }
 
 func getUserInfo(token *oauth2.Token) (*UserInfo, error) {

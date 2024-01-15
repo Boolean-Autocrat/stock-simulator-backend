@@ -17,8 +17,8 @@ INSERT INTO news (title, description, photo) VALUES ($1, $2, $3) RETURNING id, t
 `
 
 type AddArticleParams struct {
-	Title       sql.NullString `json:"title"`
-	Description sql.NullString `json:"description"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
 	Photo       sql.NullString `json:"photo"`
 }
 
@@ -41,10 +41,10 @@ INSERT INTO news_sentiment (article_id, user_id, "like", "dislike") VALUES ($1, 
 `
 
 type AddArticleSentimentParams struct {
-	ArticleID uuid.NullUUID `json:"articleId"`
-	UserID    uuid.NullUUID `json:"userId"`
-	Like      sql.NullBool  `json:"like"`
-	Dislike   sql.NullBool  `json:"dislike"`
+	ArticleID uuid.UUID `json:"articleId"`
+	UserID    uuid.UUID `json:"userId"`
+	Like      bool      `json:"like"`
+	Dislike   bool      `json:"dislike"`
 }
 
 func (q *Queries) AddArticleSentiment(ctx context.Context, arg AddArticleSentimentParams) (NewsSentiment, error) {
@@ -87,7 +87,7 @@ const getArticleSentiment = `-- name: GetArticleSentiment :many
 SELECT id, article_id, user_id, "like", dislike FROM news_sentiment WHERE article_id = $1
 `
 
-func (q *Queries) GetArticleSentiment(ctx context.Context, articleID uuid.NullUUID) ([]NewsSentiment, error) {
+func (q *Queries) GetArticleSentiment(ctx context.Context, articleID uuid.UUID) ([]NewsSentiment, error) {
 	rows, err := q.db.QueryContext(ctx, getArticleSentiment, articleID)
 	if err != nil {
 		return nil, err
@@ -121,8 +121,8 @@ SELECT id, article_id, user_id, "like", dislike FROM news_sentiment WHERE articl
 `
 
 type GetArticleSentimentByUserParams struct {
-	ArticleID uuid.NullUUID `json:"articleId"`
-	UserID    uuid.NullUUID `json:"userId"`
+	ArticleID uuid.UUID `json:"articleId"`
+	UserID    uuid.UUID `json:"userId"`
 }
 
 func (q *Queries) GetArticleSentimentByUser(ctx context.Context, arg GetArticleSentimentByUserParams) (NewsSentiment, error) {
@@ -177,10 +177,10 @@ UPDATE news_sentiment SET "like" = $1,"dislike" = $2 WHERE article_id = $3 AND u
 `
 
 type UpdateArticleSentimentParams struct {
-	Like      sql.NullBool  `json:"like"`
-	Dislike   sql.NullBool  `json:"dislike"`
-	ArticleID uuid.NullUUID `json:"articleId"`
-	UserID    uuid.NullUUID `json:"userId"`
+	Like      bool      `json:"like"`
+	Dislike   bool      `json:"dislike"`
+	ArticleID uuid.UUID `json:"articleId"`
+	UserID    uuid.UUID `json:"userId"`
 }
 
 func (q *Queries) UpdateArticleSentiment(ctx context.Context, arg UpdateArticleSentimentParams) (NewsSentiment, error) {

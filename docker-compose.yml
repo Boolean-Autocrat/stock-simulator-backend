@@ -7,21 +7,38 @@ services:
       - .env
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+  api:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "5432:5432"
-  # api:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "/app/start.sh"]
+    command: ["/app/main"]
+  # nginx-proxy:
   #   restart: always
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
+  #   image: jwilder/nginx-proxy
   #   ports:
-  #     - "8080:8080"
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - postgres
-  #   entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "/app/start.sh"]
-  #   command: ["/app/main"]
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - "/etc/nginx/vhost.d"
+  #     - "/usr/share/nginx/html"
+  #     - "/var/run/docker.sock:/tmp/docker.sock:ro"
+  #     - "/etc/nginx/certs"
+
+  # letsencrypt-nginx-proxy-companion:
+  #   restart: always
+  #   image: jrcs/letsencrypt-nginx-proxy-companion
+  #   volumes:
+  #     - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  #   volumes_from:
+  #     - "nginx-proxy"
 
 volumes:
   postgres_data:

@@ -1,7 +1,6 @@
 package stocks
 
 import (
-	"database/sql"
 	"net/http"
 	"strconv"
 	"time"
@@ -23,10 +22,9 @@ func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/stocks", s.GetStocks)
 	router.GET("/stocks/:id", s.GetStock)
 	router.POST("/stocks", s.CreateStock)
-	router.GET("/stocks/search/:query", s.SearchStocks)
+	router.GET("/stocks/search", s.SearchStocks)
 	router.GET("/stocks/:id/price_history", s.GetStockPriceHistory)
-	router.GET("/stocks/:id/price_history/:start/:end", s.GetStockPriceHistoryByDate)
-	router.POST("/stocks/:id/price_history", s.CreatePriceHistory)
+	// router.POST("/stocks/:id/price_history", s.CreatePriceHistory)
 }
 
 type Stock struct {
@@ -72,8 +70,8 @@ func (s *Service) GetStocks(c *gin.Context) {
 	isCrypto, _ := strconv.ParseBool(c.Query("is_crypto"))
 	isStock, _ := strconv.ParseBool(c.Query("is_stock"))
 	params := db.GetStocksParams{
-		sql.NullBool{Bool: isCrypto, Valid: true},
-		sql.NullBool{Bool: isStock, Valid: true},
+		IsCrypto: isCrypto,
+		IsStock:  isStock,
 	}
 	stocks, err := s.queries.GetStocks(c, params)
 	if err != nil {
@@ -85,7 +83,7 @@ func (s *Service) GetStocks(c *gin.Context) {
 }
 
 func (s *Service) SearchStocks(c *gin.Context) {
-	query := c.Param("query")
+	query := c.Query("query")
 
 	stocks, err := s.queries.SearchStocks(c, query)
 	if err != nil {
@@ -104,39 +102,29 @@ func (s *Service) GetStockPriceHistory(c *gin.Context) {
 		return
 	}
 
-	priceHistory, err := s.queries.GetStockPriceHistory(c, stockID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	var startDate, endDate time.Time
 
-	c.JSON(http.StatusOK, priceHistory)
-}
+	if c.Query("start_date") != "" && c.Query("end_date") != "" {
+		startDate, err = time.Parse(time.RFC3339, c.Param("start"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date"})
+			return
+		}
 
-func (s *Service) GetStockPriceHistoryByDate(c *gin.Context) {
-	idStr := c.Param("id")
-	stockID, err := uuid.Parse(idStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
-		return
-	}
-
-	startDate, err := time.Parse(time.RFC3339, c.Param("start"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date"})
-		return
-	}
-
-	endDate, err := time.Parse(time.RFC3339, c.Param("end"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date"})
-		return
+		endDate, err = time.Parse(time.RFC3339, c.Param("end"))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date"})
+			return
+		}
+	} else {
+		startDate = time.Now().AddDate(-3, 0, 0)
+		endDate = time.Now().AddDate(0, 0, 1)
 	}
 
 	params := db.GetStockPriceHistoryByDateParams{
-		stockID,
-		startDate,
-		endDate,
+		StockID:   stockID,
+		PriceAt:   startDate,
+		PriceAt_2: endDate,
 	}
 
 	priceHistory, err := s.queries.GetStockPriceHistoryByDate(c, params)
@@ -148,27 +136,4 @@ func (s *Service) GetStockPriceHistoryByDate(c *gin.Context) {
 	c.JSON(http.StatusOK, priceHistory)
 }
 
-func (s *Service) CreatePriceHistory(c *gin.Context) {
-	stockID, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
-		return
-	}
-
-	var input struct {
-		Price float64 `json:"price"`
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	priceHistory, err := s.queries.CreatePriceHistory(c, stockID, input.Price)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, priceHistory)
-}
+func (s *Service) CreatePriceHistory(c *gin.Context) {}

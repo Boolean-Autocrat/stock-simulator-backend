@@ -7,7 +7,7 @@ package db
 
 import (
 	"context"
-	"database/sql"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -17,9 +17,9 @@ INSERT INTO portfolio (user_id, stock_id, purchase_price) VALUES ($1, $2, $3) RE
 `
 
 type AddStockToPortfolioParams struct {
-	UserID        uuid.NullUUID  `json:"userId"`
-	StockID       uuid.NullUUID  `json:"stockId"`
-	PurchasePrice sql.NullString `json:"purchasePrice"`
+	UserID        uuid.UUID `json:"userId"`
+	StockID       uuid.UUID `json:"stockId"`
+	PurchasePrice string    `json:"purchasePrice"`
 }
 
 func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfolioParams) (Portfolio, error) {
@@ -36,84 +36,49 @@ func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfol
 }
 
 const getPortfolio = `-- name: GetPortfolio :many
-SELECT id, user_id, stock_id, purchase_price, purchased_at FROM portfolio WHERE user_id = $1
+SELECT p.stock_id, p.purchase_price, p.purchased_at, s.name, s.symbol, s.price, s.is_crypto, s.is_stock
+FROM portfolio p
+JOIN stocks s ON p.stock_id = s.id
+WHERE p.user_id = $1
+ORDER BY p.purchased_at
+LIMIT 10
+OFFSET $2
 `
 
-func (q *Queries) GetPortfolio(ctx context.Context, userID uuid.NullUUID) ([]Portfolio, error) {
-	rows, err := q.db.QueryContext(ctx, getPortfolio, userID)
+type GetPortfolioParams struct {
+	UserID uuid.UUID `json:"userId"`
+	Offset int32     `json:"offset"`
+}
+
+type GetPortfolioRow struct {
+	StockID       uuid.UUID `json:"stockId"`
+	PurchasePrice string    `json:"purchasePrice"`
+	PurchasedAt   time.Time `json:"purchasedAt"`
+	Name          string    `json:"name"`
+	Symbol        string    `json:"symbol"`
+	Price         string    `json:"price"`
+	IsCrypto      bool      `json:"isCrypto"`
+	IsStock       bool      `json:"isStock"`
+}
+
+func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]GetPortfolioRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPortfolio, arg.UserID, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Portfolio
+	var items []GetPortfolioRow
 	for rows.Next() {
-		var i Portfolio
+		var i GetPortfolioRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
 			&i.StockID,
 			&i.PurchasePrice,
 			&i.PurchasedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getPortfolioStock = `-- name: GetPortfolioStock :one
-SELECT id, user_id, stock_id, purchase_price, purchased_at FROM portfolio WHERE user_id = $1 AND stock_id = $2
-`
-
-type GetPortfolioStockParams struct {
-	UserID  uuid.NullUUID `json:"userId"`
-	StockID uuid.NullUUID `json:"stockId"`
-}
-
-func (q *Queries) GetPortfolioStock(ctx context.Context, arg GetPortfolioStockParams) (Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, getPortfolioStock, arg.UserID, arg.StockID)
-	var i Portfolio
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.StockID,
-		&i.PurchasePrice,
-		&i.PurchasedAt,
-	)
-	return i, err
-}
-
-const getPortfolioStocks = `-- name: GetPortfolioStocks :many
-SELECT id, user_id, stock_id, purchase_price, purchased_at FROM portfolio WHERE user_id = $1 AND stock_id = $2
-`
-
-type GetPortfolioStocksParams struct {
-	UserID  uuid.NullUUID `json:"userId"`
-	StockID uuid.NullUUID `json:"stockId"`
-}
-
-func (q *Queries) GetPortfolioStocks(ctx context.Context, arg GetPortfolioStocksParams) ([]Portfolio, error) {
-	rows, err := q.db.QueryContext(ctx, getPortfolioStocks, arg.UserID, arg.StockID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Portfolio
-	for rows.Next() {
-		var i Portfolio
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.StockID,
-			&i.PurchasePrice,
-			&i.PurchasedAt,
+			&i.Name,
+			&i.Symbol,
+			&i.Price,
+			&i.IsCrypto,
+			&i.IsStock,
 		); err != nil {
 			return nil, err
 		}
@@ -133,8 +98,8 @@ DELETE FROM portfolio WHERE user_id = $1 AND stock_id = $2
 `
 
 type RemoveStockFromPortfolioParams struct {
-	UserID  uuid.NullUUID `json:"userId"`
-	StockID uuid.NullUUID `json:"stockId"`
+	UserID  uuid.UUID `json:"userId"`
+	StockID uuid.UUID `json:"stockId"`
 }
 
 func (q *Queries) RemoveStockFromPortfolio(ctx context.Context, arg RemoveStockFromPortfolioParams) error {
