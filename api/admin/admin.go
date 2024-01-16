@@ -60,7 +60,8 @@ func (s *Service) adminLoginHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
-	c.SetCookie("admin_auth", os.Getenv("ADMIN_SECRET"), 3600, "/", "localhost", false, true)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("admin_auth", os.Getenv("ADMIN_SECRET"), 3600*24*15, "", "", false, true)
 	c.Redirect(http.StatusFound, "/admin/dashboard")
 }
 

@@ -12,11 +12,14 @@
     <td class="px-6 py-4">
         {{ .stock.Quantity }}
     </td>
+    {{ if eq .stock.IsStock true }}
     <td class="px-6 py-4">
-        {{ .stock.IsStock }}
+        Stock
     </td>
+    {{ else }}
     <td class="px-6 py-4">
-        {{ .stock.IsCrypto }}
+        Crypto
     </td>
+    {{ end }}
 </tr>
 {{ end }}
