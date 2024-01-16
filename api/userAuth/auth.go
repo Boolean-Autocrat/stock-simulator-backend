@@ -56,17 +56,12 @@ type UserInfo struct {
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/auth/google/login", s.GoogleLogin)
 	router.GET("/auth/google/callback", s.GoogleCallback)
-	router.GET("/auth/google/logout", s.GoogleLogout)
 	router.GET("/auth/userinfo", s.GetUserInfo)
 }
 
 func (s *Service) GoogleLogin(c *gin.Context) {
 	url := googleOauthConfig.AuthCodeURL("state")
 	c.Redirect(http.StatusTemporaryRedirect, url)
-}
-
-func (s *Service) GoogleLogout(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
 
 func (s *Service) GoogleCallback(c *gin.Context) {
@@ -111,7 +106,7 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
 		UserID:    user.ID,
 		Token:     token.AccessToken,
-		ExpiresAt: token.Expiry,
+		ExpiresAt: token.Expiry.AddDate(0, 0, 365),
 	})
 	if err != nil {
 		fmt.Print(err)

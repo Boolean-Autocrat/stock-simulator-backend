@@ -29,6 +29,13 @@ type StockForm struct {
 	StockCrypto string `form:"stock-crypto" binding:"required"`
 }
 
+type NewsForm struct {
+	Title   string `form:"title" binding:"required"`
+	Author  string `form:"author" binding:"required"`
+	Content string `form:"content" binding:"required"`
+	Tag     string `form:"tag" binding:"required"`
+}
+
 func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
@@ -65,10 +72,6 @@ func (s *Service) adminLoginHandler(c *gin.Context) {
 }
 
 func (s *Service) adminDashboard(c *gin.Context) {
-	// params := db.GetStocksParams{
-	// 	IsCrypto: true,
-	// 	IsStock:  true,
-	// }
 	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -108,12 +111,35 @@ func (s *Service) addStock(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
+	s.queries.CreatePriceHistory(c, db.CreatePriceHistoryParams{
+		StockID: stock.ID,
+		Price:   stock.Price,
+	})
 	c.HTML(http.StatusOK, "stock_table.tmpl", gin.H{
 		"stock": stock,
 	})
 }
 
 func (s *Service) addNews(c *gin.Context) {
+	var form NewsForm
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
+	params := db.AddArticleParams{
+		Title:   form.Title,
+		Author:  form.Author,
+		Content: form.Content,
+		Tag:     form.Tag,
+	}
+
+	article, err := s.queries.AddArticle(c, params)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.HTML(http.StatusOK, "article_table.tmpl", gin.H{
+		"article": article,
+	})
 }

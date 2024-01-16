@@ -7,37 +7,45 @@ package db
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/google/uuid"
 )
 
 const addArticle = `-- name: AddArticle :one
-INSERT INTO news (title, description, photo) VALUES ($1, $2, $3) RETURNING id, title, description, photo, likes, dislikes
+INSERT INTO news (title, author, content, tag) VALUES ($1, $2, $3, $4) RETURNING id, title, author, content, tag, created_at
 `
 
 type AddArticleParams struct {
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Photo       sql.NullString `json:"photo"`
+	Title   string `json:"title"`
+	Author  string `json:"author"`
+	Content string `json:"content"`
+	Tag     string `json:"tag"`
 }
 
 func (q *Queries) AddArticle(ctx context.Context, arg AddArticleParams) (News, error) {
-	row := q.db.QueryRowContext(ctx, addArticle, arg.Title, arg.Description, arg.Photo)
+	row := q.db.QueryRowContext(ctx, addArticle,
+		arg.Title,
+		arg.Author,
+		arg.Content,
+		arg.Tag,
+	)
 	var i News
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
-		&i.Description,
-		&i.Photo,
-		&i.Likes,
-		&i.Dislikes,
+		&i.Author,
+		&i.Content,
+		&i.Tag,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
-const addArticleSentiment = `-- name: AddArticleSentiment :one
-INSERT INTO news_sentiment (article_id, user_id, "like", "dislike") VALUES ($1, $2, $3, $4) RETURNING id, article_id, user_id, "like", dislike
+const addArticleSentiment = `-- name: AddArticleSentiment :exec
+INSERT INTO news_sentiment(article_id, user_id, "like", "dislike")
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (user_id) DO UPDATE
+SET "like" = excluded.like, "dislike" = excluded.dislike
 `
 
 type AddArticleSentimentParams struct {
@@ -47,26 +55,18 @@ type AddArticleSentimentParams struct {
 	Dislike   bool      `json:"dislike"`
 }
 
-func (q *Queries) AddArticleSentiment(ctx context.Context, arg AddArticleSentimentParams) (NewsSentiment, error) {
-	row := q.db.QueryRowContext(ctx, addArticleSentiment,
+func (q *Queries) AddArticleSentiment(ctx context.Context, arg AddArticleSentimentParams) error {
+	_, err := q.db.ExecContext(ctx, addArticleSentiment,
 		arg.ArticleID,
 		arg.UserID,
 		arg.Like,
 		arg.Dislike,
 	)
-	var i NewsSentiment
-	err := row.Scan(
-		&i.ID,
-		&i.ArticleID,
-		&i.UserID,
-		&i.Like,
-		&i.Dislike,
-	)
-	return i, err
+	return err
 }
 
 const getArticle = `-- name: GetArticle :one
-SELECT id, title, description, photo, likes, dislikes FROM news WHERE id = $1
+SELECT id, title, author, content, tag, created_at FROM news WHERE id = $1
 `
 
 func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (News, error) {
@@ -75,71 +75,32 @@ func (q *Queries) GetArticle(ctx context.Context, id uuid.UUID) (News, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
-		&i.Description,
-		&i.Photo,
-		&i.Likes,
-		&i.Dislikes,
+		&i.Author,
+		&i.Content,
+		&i.Tag,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
-const getArticleSentiment = `-- name: GetArticleSentiment :many
-SELECT id, article_id, user_id, "like", dislike FROM news_sentiment WHERE article_id = $1
+const getArticleSentiment = `-- name: GetArticleSentiment :one
+SELECT COUNT(CASE WHEN "like" THEN 1 END) AS like_count, COUNT(CASE WHEN "dislike" THEN 1 END) AS dislike_count FROM news_sentiment WHERE article_id = $1
 `
 
-func (q *Queries) GetArticleSentiment(ctx context.Context, articleID uuid.UUID) ([]NewsSentiment, error) {
-	rows, err := q.db.QueryContext(ctx, getArticleSentiment, articleID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []NewsSentiment
-	for rows.Next() {
-		var i NewsSentiment
-		if err := rows.Scan(
-			&i.ID,
-			&i.ArticleID,
-			&i.UserID,
-			&i.Like,
-			&i.Dislike,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type GetArticleSentimentRow struct {
+	LikeCount    int64 `json:"likeCount"`
+	DislikeCount int64 `json:"dislikeCount"`
 }
 
-const getArticleSentimentByUser = `-- name: GetArticleSentimentByUser :one
-SELECT id, article_id, user_id, "like", dislike FROM news_sentiment WHERE article_id = $1 AND user_id = $2
-`
-
-type GetArticleSentimentByUserParams struct {
-	ArticleID uuid.UUID `json:"articleId"`
-	UserID    uuid.UUID `json:"userId"`
-}
-
-func (q *Queries) GetArticleSentimentByUser(ctx context.Context, arg GetArticleSentimentByUserParams) (NewsSentiment, error) {
-	row := q.db.QueryRowContext(ctx, getArticleSentimentByUser, arg.ArticleID, arg.UserID)
-	var i NewsSentiment
-	err := row.Scan(
-		&i.ID,
-		&i.ArticleID,
-		&i.UserID,
-		&i.Like,
-		&i.Dislike,
-	)
+func (q *Queries) GetArticleSentiment(ctx context.Context, articleID uuid.UUID) (GetArticleSentimentRow, error) {
+	row := q.db.QueryRowContext(ctx, getArticleSentiment, articleID)
+	var i GetArticleSentimentRow
+	err := row.Scan(&i.LikeCount, &i.DislikeCount)
 	return i, err
 }
 
 const getArticles = `-- name: GetArticles :many
-SELECT id, title, description, photo, likes, dislikes FROM news
+SELECT id, title, author, content, tag, created_at FROM news
 `
 
 func (q *Queries) GetArticles(ctx context.Context) ([]News, error) {
@@ -154,10 +115,10 @@ func (q *Queries) GetArticles(ctx context.Context) ([]News, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Description,
-			&i.Photo,
-			&i.Likes,
-			&i.Dislikes,
+			&i.Author,
+			&i.Content,
+			&i.Tag,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -172,24 +133,17 @@ func (q *Queries) GetArticles(ctx context.Context) ([]News, error) {
 	return items, nil
 }
 
-const updateArticleSentiment = `-- name: UpdateArticleSentiment :one
-UPDATE news_sentiment SET "like" = $1,"dislike" = $2 WHERE article_id = $3 AND user_id = $4 RETURNING id, article_id, user_id, "like", dislike
+const getUserSentiment = `-- name: GetUserSentiment :one
+SELECT id, article_id, user_id, "like", dislike FROM news_sentiment WHERE article_id = $1 AND user_id = $2
 `
 
-type UpdateArticleSentimentParams struct {
-	Like      bool      `json:"like"`
-	Dislike   bool      `json:"dislike"`
+type GetUserSentimentParams struct {
 	ArticleID uuid.UUID `json:"articleId"`
 	UserID    uuid.UUID `json:"userId"`
 }
 
-func (q *Queries) UpdateArticleSentiment(ctx context.Context, arg UpdateArticleSentimentParams) (NewsSentiment, error) {
-	row := q.db.QueryRowContext(ctx, updateArticleSentiment,
-		arg.Like,
-		arg.Dislike,
-		arg.ArticleID,
-		arg.UserID,
-	)
+func (q *Queries) GetUserSentiment(ctx context.Context, arg GetUserSentimentParams) (NewsSentiment, error) {
+	row := q.db.QueryRowContext(ctx, getUserSentiment, arg.ArticleID, arg.UserID)
 	var i NewsSentiment
 	err := row.Scan(
 		&i.ID,

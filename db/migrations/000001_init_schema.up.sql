@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "access_tokens" (
   "id" uuid DEFAULT uuid_generate_v4(),
   "user_id" uuid NOT NULL UNIQUE,
   "token" varchar NOT NULL,
-  "expires_at" timestamp NOT NULL,
+  "expires_at" timestamptz NOT NULL,
   PRIMARY KEY ("id"),
   FOREIGN KEY ("user_id") REFERENCES "users" ("id")
 );
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "refresh_tokens" (
   "id" uuid DEFAULT uuid_generate_v4(),
   "user_id" uuid NOT NULL UNIQUE,
   "token" varchar NOT NULL,
-  "expires_at" timestamp NOT NULL,
+  "expires_at" timestamptz NOT NULL,
   PRIMARY KEY ("id"),
   FOREIGN KEY ("user_id") REFERENCES "users" ("id")
 );
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS "portfolio" (
   "user_id" uuid NOT NULL,
   "stock_id" uuid NOT NULL,
   "purchase_price" decimal NOT NULL,
-  "purchased_at" timestamp NOT NULL DEFAULT (now()),
+  "purchased_at" timestamptz NOT NULL DEFAULT (now()),
   PRIMARY KEY ("id"),
   FOREIGN KEY ("user_id") REFERENCES "users" ("id"),
   FOREIGN KEY ("stock_id") REFERENCES "stocks" ("id")
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS "price_history" (
   "id" uuid DEFAULT uuid_generate_v4(),
   "stock_id" uuid NOT NULL,
   "price" decimal NOT NULL,
-  "price_at" timestamp NOT NULL DEFAULT (now()),
+  "price_at" timestamptz NOT NULL DEFAULT (now()),
   PRIMARY KEY ("id"),
   FOREIGN KEY ("stock_id") REFERENCES "stocks" ("id")
 );
@@ -61,17 +61,17 @@ CREATE TABLE IF NOT EXISTS "price_history" (
 CREATE TABLE IF NOT EXISTS "news" (
   "id" uuid DEFAULT uuid_generate_v4(),
   "title" varchar NOT NULL,
-  "description" varchar NOT NULL,
-  "photo" varchar,
-  "likes" int DEFAULT 0 NOT NULL,
-  "dislikes" int DEFAULT 0 NOT NULL,
+  "author" varchar NOT NULL,
+  "content" TEXT NOT NULL,
+  "tag" varchar NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
   PRIMARY KEY ("id")
 );
 
 CREATE TABLE IF NOT EXISTS "news_sentiment" (
   "id" uuid DEFAULT uuid_generate_v4(),
   "article_id" uuid NOT NULL,
-  "user_id" uuid NOT NULL,
+  "user_id" uuid NOT NULL UNIQUE,
   "like" bool NOT NULL,
   "dislike" bool NOT NULL,
   PRIMARY KEY ("id"),

@@ -20,10 +20,8 @@ func NewService(queries *db.Queries) *Service {
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/stocks", s.GetStocks)
 	router.GET("/stocks/:id", s.GetStock)
-	router.POST("/stocks", s.CreateStock)
 	router.GET("/stocks/search", s.SearchStocks)
 	router.GET("/stocks/:id/price_history", s.GetStockPriceHistory)
-	// router.POST("/stocks/:id/price_history", s.CreatePriceHistory)
 }
 
 type Stock struct {
@@ -34,29 +32,14 @@ type Stock struct {
 	IsStock  bool    `json:"is_stock"`
 }
 
-func (s *Service) CreateStock(c *gin.Context) {
-	var params db.CreateStockParams
-	if err := c.ShouldBindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	stock, err := s.queries.CreateStock(c, params)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, stock)
-}
-
 func (s *Service) GetStock(c *gin.Context) {
-	var params db.GetStockParams
-	if err := c.ShouldBindJSON(&params); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	idStr := c.Param("id")
+	stockID, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
 		return
 	}
-	stock, err := s.queries.GetStock(c, params)
+	stock, err := s.queries.GetStockById(c, stockID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -66,12 +49,6 @@ func (s *Service) GetStock(c *gin.Context) {
 }
 
 func (s *Service) GetStocks(c *gin.Context) {
-	// isCrypto, _ := strconv.ParseBool(c.Query("is_crypto"))
-	// isStock, _ := strconv.ParseBool(c.Query("is_stock"))
-	// params := db.GetStocksParams{
-	// 	IsCrypto: isCrypto,
-	// 	IsStock:  isStock,
-	// }
 	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -134,5 +111,3 @@ func (s *Service) GetStockPriceHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, priceHistory)
 }
-
-func (s *Service) CreatePriceHistory(c *gin.Context) {}

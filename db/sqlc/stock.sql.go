@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-const createPriceHistory = `-- name: CreatePriceHistory :one
-INSERT INTO price_history (stock_id, price) VALUES ($1, $2) RETURNING id, stock_id, price, price_at
+const createPriceHistory = `-- name: CreatePriceHistory :exec
+INSERT INTO price_history (stock_id, price) VALUES ($1, $2)
 `
 
 type CreatePriceHistoryParams struct {
@@ -21,16 +21,9 @@ type CreatePriceHistoryParams struct {
 	Price   string    `json:"price"`
 }
 
-func (q *Queries) CreatePriceHistory(ctx context.Context, arg CreatePriceHistoryParams) (PriceHistory, error) {
-	row := q.db.QueryRowContext(ctx, createPriceHistory, arg.StockID, arg.Price)
-	var i PriceHistory
-	err := row.Scan(
-		&i.ID,
-		&i.StockID,
-		&i.Price,
-		&i.PriceAt,
-	)
-	return i, err
+func (q *Queries) CreatePriceHistory(ctx context.Context, arg CreatePriceHistoryParams) error {
+	_, err := q.db.ExecContext(ctx, createPriceHistory, arg.StockID, arg.Price)
+	return err
 }
 
 const createStock = `-- name: CreateStock :one
@@ -101,40 +94,27 @@ func (q *Queries) GetStock(ctx context.Context, arg GetStockParams) (Stock, erro
 	return i, err
 }
 
-const getStockPriceHistory = `-- name: GetStockPriceHistory :many
-SELECT id, stock_id, price, price_at FROM price_history WHERE stock_id = $1
+const getStockById = `-- name: GetStockById :one
+SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE id = $1
 `
 
-func (q *Queries) GetStockPriceHistory(ctx context.Context, stockID uuid.UUID) ([]PriceHistory, error) {
-	rows, err := q.db.QueryContext(ctx, getStockPriceHistory, stockID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []PriceHistory
-	for rows.Next() {
-		var i PriceHistory
-		if err := rows.Scan(
-			&i.ID,
-			&i.StockID,
-			&i.Price,
-			&i.PriceAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetStockById(ctx context.Context, id uuid.UUID) (Stock, error) {
+	row := q.db.QueryRowContext(ctx, getStockById, id)
+	var i Stock
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Symbol,
+		&i.Price,
+		&i.IsCrypto,
+		&i.IsStock,
+		&i.Quantity,
+	)
+	return i, err
 }
 
 const getStockPriceHistoryByDate = `-- name: GetStockPriceHistoryByDate :many
-SELECT id, stock_id, price, price_at FROM price_history WHERE stock_id = $1 AND price_at >= $2 AND price_at <= $3
+SELECT price, price_at FROM price_history WHERE stock_id = $1 AND price_at >= $2 AND price_at <= $3
 `
 
 type GetStockPriceHistoryByDateParams struct {
@@ -143,21 +123,21 @@ type GetStockPriceHistoryByDateParams struct {
 	PriceAt_2 time.Time `json:"priceAt2"`
 }
 
-func (q *Queries) GetStockPriceHistoryByDate(ctx context.Context, arg GetStockPriceHistoryByDateParams) ([]PriceHistory, error) {
+type GetStockPriceHistoryByDateRow struct {
+	Price   string    `json:"price"`
+	PriceAt time.Time `json:"priceAt"`
+}
+
+func (q *Queries) GetStockPriceHistoryByDate(ctx context.Context, arg GetStockPriceHistoryByDateParams) ([]GetStockPriceHistoryByDateRow, error) {
 	rows, err := q.db.QueryContext(ctx, getStockPriceHistoryByDate, arg.StockID, arg.PriceAt, arg.PriceAt_2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PriceHistory
+	var items []GetStockPriceHistoryByDateRow
 	for rows.Next() {
-		var i PriceHistory
-		if err := rows.Scan(
-			&i.ID,
-			&i.StockID,
-			&i.Price,
-			&i.PriceAt,
-		); err != nil {
+		var i GetStockPriceHistoryByDateRow
+		if err := rows.Scan(&i.Price, &i.PriceAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

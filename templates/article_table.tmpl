@@ -1,0 +1,16 @@
+{{ define "article_table.tmpl" }}
+<tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
+    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+        {{ .article.Title }}
+    </th>
+    <td class="px-6 py-4">
+        {{ .article.Author }}
+    </td>
+    <td class="px-6 py-4">
+        {{ .article.Tag }}
+    </td>
+    <td class="px-6 py-4">
+        {{ .article.CreatedAt.Format "Mon, 02 Jan 2006 15:04:05 UTC" }}
+    </td>
+</tr>
+{{ end }}

@@ -5,7 +5,6 @@
 package db
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,12 +18,12 @@ type AccessToken struct {
 }
 
 type News struct {
-	ID          uuid.UUID      `json:"id"`
-	Title       string         `json:"title"`
-	Description string         `json:"description"`
-	Photo       sql.NullString `json:"photo"`
-	Likes       int32          `json:"likes"`
-	Dislikes    int32          `json:"dislikes"`
+	ID        uuid.UUID `json:"id"`
+	Title     string    `json:"title"`
+	Author    string    `json:"author"`
+	Content   string    `json:"content"`
+	Tag       string    `json:"tag"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type NewsSentiment struct {

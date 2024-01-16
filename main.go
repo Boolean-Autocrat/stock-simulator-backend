@@ -6,6 +6,7 @@ import (
 
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/middleware"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/news"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/stocks"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/userAuth"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -30,6 +31,7 @@ func main() {
 	adminService := admin.NewService(queries)
 	authService := userAuth.NewService(queries)
 	stockService := stocks.NewService(queries)
+	newsService := news.NewService(queries)
 
 	router := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
@@ -44,6 +46,7 @@ func main() {
 	adminService.RegisterHandlers(router)
 	authService.RegisterHandlers(router)
 	stockService.RegisterHandlers(router)
+	newsService.RegisterHandlers(router)
 
 	router.Run()
 }
