@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -75,7 +74,6 @@ func (s *Service) adminDashboard(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Print("Stocks are: ", stocks)
 
 	news, err := s.queries.GetArticles(c)
 	if err != nil {
