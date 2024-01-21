@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -54,9 +55,70 @@ type UserInfo struct {
 }
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
-	router.GET("/auth/google/login", s.GoogleLogin)
+	router.GET("/auth/google/login", s.GoogleAuthUser)
 	router.GET("/auth/google/callback", s.GoogleCallback)
 	router.GET("/auth/userinfo", s.GetUserInfo)
+}
+
+func (s *Service) GoogleAuthUser(c *gin.Context) {
+	var body struct {
+		accessToken string `json:"accessToken" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	token := &oauth2.Token{
+		AccessToken: body.accessToken,
+	}
+
+	userInfo, err := getGoogleUserInfo(token)
+	if err != nil {
+		fmt.Print(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
+
+	user, err := s.queries.CreateUser(c, db.CreateUserParams{
+		FullName: userInfo.Name,
+		Email:    userInfo.Email,
+		Picture:  userInfo.Picture,
+	})
+	if err != nil {
+		fmt.Print(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
+		UserID:    user.ID,
+		Token:     token.AccessToken,
+		ExpiresAt: time.Now().AddDate(0, 0, 365),
+	})
+	if err != nil {
+		fmt.Print(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
+		return
+	}
+
+	if err != nil {
+		fmt.Print(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token"})
+		return
+	}
+
+	returnParams := gin.H{
+		"accessToken": token.AccessToken,
+		"user": gin.H{
+			"id":       user.ID,
+			"fullName": user.FullName,
+			"email":    user.Email,
+			"picture":  user.Picture,
+		},
+	}
+
+	c.JSON(http.StatusOK, returnParams)
 }
 
 func (s *Service) GoogleLogin(c *gin.Context) {
