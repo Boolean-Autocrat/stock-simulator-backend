@@ -56,7 +56,7 @@ type UserInfo struct {
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/auth/google/login", s.GoogleAuthUser)
-	router.GET("/auth/google/callback", s.GoogleCallback)
+	// router.GET("/auth/google/callback", s.GoogleCallback)
 	router.GET("/auth/userinfo", s.GetUserInfo)
 }
 
