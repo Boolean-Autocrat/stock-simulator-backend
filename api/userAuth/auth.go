@@ -63,6 +63,9 @@ func (s *Service) RegisterHandlers(router *gin.Engine) {
 func (s *Service) GoogleAuthUser(c *gin.Context) {
 	var body struct {
 		accessToken string `json:"accessToken" binding:"required"`
+		fullName    string `json:"fullName" binding:"required"`
+		email       string `json:"email" binding:"required"`
+		picture     string `json:"picture" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -73,17 +76,17 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 		AccessToken: body.accessToken,
 	}
 
-	userInfo, err := getGoogleUserInfo(token)
-	if err != nil {
-		fmt.Print(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
-		return
-	}
+	// userInfo, err := getGoogleUserInfo(token)
+	// if err != nil {
+	// 	fmt.Print(err)
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+	// 	return
+	// }
 
 	user, err := s.queries.CreateUser(c, db.CreateUserParams{
-		FullName: userInfo.Name,
-		Email:    userInfo.Email,
-		Picture:  userInfo.Picture,
+		FullName: body.fullName,
+		Email:    body.email,
+		Picture:  body.picture,
 	})
 	if err != nil {
 		fmt.Print(err)
