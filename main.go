@@ -33,8 +33,8 @@ func main() {
 	stockService := stocks.NewService(queries)
 	newsService := news.NewService(queries)
 
-	router := gin.Default()
 	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/assets", "./assets")
 	router.GET("/health", func(c *gin.Context) {
