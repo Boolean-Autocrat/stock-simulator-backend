@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -56,37 +55,33 @@ type UserInfo struct {
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.POST("/auth/google/login", s.GoogleAuthUser)
-	// router.GET("/auth/google/callback", s.GoogleCallback)
 	router.GET("/auth/userinfo", s.GetUserInfo)
 }
 
 func (s *Service) GoogleAuthUser(c *gin.Context) {
 	var body struct {
-		accessToken string `json:"accessToken" binding:"required"`
-		fullName    string `json:"fullName" binding:"required"`
-		email       string `json:"email" binding:"required"`
-		picture     string `json:"picture" binding:"required"`
+		AccessToken string `json:"accessToken" binding:"required"`
 	}
-	if err := c.ShouldBindJSON(&body); err != nil {
+
+	if err := c.ShouldBind(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	token := &oauth2.Token{
-		AccessToken: body.accessToken,
+		AccessToken: body.AccessToken,
 	}
 
-	// userInfo, err := getGoogleUserInfo(token)
-	// if err != nil {
-	// 	fmt.Print(err)
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
-	// 	return
-	// }
-
+	userInfo, err := getGoogleUserInfo(token)
+	if err != nil {
+		fmt.Print(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
+		return
+	}
 	user, err := s.queries.CreateUser(c, db.CreateUserParams{
-		FullName: body.fullName,
-		Email:    body.email,
-		Picture:  body.picture,
+		FullName: userInfo.Name,
+		Email:    userInfo.Email,
+		Picture:  userInfo.Picture,
 	})
 	if err != nil {
 		fmt.Print(err)
@@ -97,20 +92,13 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
 		UserID:    user.ID,
 		Token:     token.AccessToken,
-		ExpiresAt: time.Now().AddDate(0, 0, 365),
+		ExpiresAt: token.Expiry.AddDate(0, 0, 365),
 	})
 	if err != nil {
 		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
 		return
 	}
-
-	if err != nil {
-		fmt.Print(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token"})
-		return
-	}
-
 	returnParams := gin.H{
 		"accessToken": token.AccessToken,
 		"user": gin.H{
