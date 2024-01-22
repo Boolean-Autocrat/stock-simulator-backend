@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -70,6 +71,7 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 
 	token := &oauth2.Token{
 		AccessToken: body.AccessToken,
+		Expiry:      time.Now().AddDate(0, 0, 365),
 	}
 
 	userInfo, err := getGoogleUserInfo(token)
@@ -78,6 +80,11 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
+	if !userInfo.EmailVerified {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid access token"})
+		return
+	}
+
 	user, err := s.queries.CreateUser(c, db.CreateUserParams{
 		FullName: userInfo.Name,
 		Email:    userInfo.Email,
@@ -92,7 +99,7 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
 		UserID:    user.ID,
 		Token:     token.AccessToken,
-		ExpiresAt: token.Expiry.AddDate(0, 0, 365),
+		ExpiresAt: token.Expiry,
 	})
 	if err != nil {
 		fmt.Print(err)
