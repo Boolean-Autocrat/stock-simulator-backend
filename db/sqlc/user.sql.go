@@ -40,6 +40,45 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getLeaderboard = `-- name: GetLeaderboard :many
+SELECT id, full_name, picture, balance FROM users ORDER BY balance, full_name DESC LIMIT 10
+`
+
+type GetLeaderboardRow struct {
+	ID       uuid.UUID `json:"id"`
+	FullName string    `json:"fullName"`
+	Picture  string    `json:"picture"`
+	Balance  string    `json:"balance"`
+}
+
+func (q *Queries) GetLeaderboard(ctx context.Context) ([]GetLeaderboardRow, error) {
+	rows, err := q.db.QueryContext(ctx, getLeaderboard)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetLeaderboardRow
+	for rows.Next() {
+		var i GetLeaderboardRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FullName,
+			&i.Picture,
+			&i.Balance,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUser = `-- name: GetUser :one
 SELECT full_name, email, picture, balance FROM users WHERE id = $1
 `
@@ -76,6 +115,33 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Email,
 		&i.Picture,
 		&i.Balance,
+	)
+	return i, err
+}
+
+const getUserPosition = `-- name: GetUserPosition :one
+SELECT id, full_name, picture, balance, position FROM (
+  SELECT id, full_name, picture, balance, row_number() OVER (ORDER BY balance DESC) AS position FROM users
+) AS users_with_position WHERE id = $1
+`
+
+type GetUserPositionRow struct {
+	ID       uuid.UUID `json:"id"`
+	FullName string    `json:"fullName"`
+	Picture  string    `json:"picture"`
+	Balance  string    `json:"balance"`
+	Position int64     `json:"position"`
+}
+
+func (q *Queries) GetUserPosition(ctx context.Context, id uuid.UUID) (GetUserPositionRow, error) {
+	row := q.db.QueryRowContext(ctx, getUserPosition, id)
+	var i GetUserPositionRow
+	err := row.Scan(
+		&i.ID,
+		&i.FullName,
+		&i.Picture,
+		&i.Balance,
+		&i.Position,
 	)
 	return i, err
 }

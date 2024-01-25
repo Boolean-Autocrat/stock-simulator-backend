@@ -12,3 +12,11 @@ SELECT full_name, email, picture, balance FROM users WHERE id = $1;
 
 -- name: GetUserByEmail :one
 SELECT * FROM users WHERE email = $1;
+
+-- name: GetLeaderboard :many
+SELECT id, full_name, picture, balance FROM users ORDER BY balance, full_name DESC LIMIT 10;
+
+-- name: GetUserPosition :one
+SELECT id, full_name, picture, balance, position FROM (
+  SELECT id, full_name, picture, balance, row_number() OVER (ORDER BY balance DESC) AS position FROM users
+) AS users_with_position WHERE id = $1;

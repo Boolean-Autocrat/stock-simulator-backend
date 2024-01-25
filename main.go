@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/leaderboard"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/middleware"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/news"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/portfolio"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/stocks"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/userAuth"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -32,6 +34,8 @@ func main() {
 	authService := userAuth.NewService(queries)
 	stockService := stocks.NewService(queries)
 	newsService := news.NewService(queries)
+	portfolioService := portfolio.NewService(queries)
+	leaderboardService := leaderboard.NewService(queries)
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -47,6 +51,8 @@ func main() {
 	authService.RegisterHandlers(router)
 	stockService.RegisterHandlers(router)
 	newsService.RegisterHandlers(router)
+	portfolioService.RegisterHandlers(router)
+	leaderboardService.RegisterHandlers(router)
 
 	router.Run()
 }
