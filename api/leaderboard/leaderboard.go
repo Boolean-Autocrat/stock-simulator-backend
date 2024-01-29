@@ -20,6 +20,7 @@ type LeaderboardItem struct {
 	FullName string `json:"fullName"`
 	Balance  string `json:"balance"`
 	Position int    `json:"position"`
+	Picture  string `json:"picture"`
 	IsYou    bool   `json:"isYou"`
 }
 
@@ -46,6 +47,7 @@ func (s *Service) getLeaderboard(c *gin.Context) {
 			FullName: leaderboard[i].FullName,
 			Balance:  leaderboard[i].Balance,
 			Position: counter,
+			Picture:  leaderboard[i].Picture,
 			IsYou:    leaderboard[i].ID == userId.(uuid.UUID),
 		}
 		leaderboardItems = append(leaderboardItems, item)
@@ -60,6 +62,7 @@ func (s *Service) getLeaderboard(c *gin.Context) {
 			FullName: userPos.FullName,
 			Balance:  userPos.Balance,
 			Position: int(userPos.Position),
+			Picture:  userPos.Picture,
 			IsYou:    true,
 		}
 		leaderboardItems = append(leaderboardItems, userItem)
