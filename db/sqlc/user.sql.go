@@ -41,7 +41,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getLeaderboard = `-- name: GetLeaderboard :many
-SELECT id, full_name, picture, balance FROM users ORDER BY balance, full_name DESC LIMIT 10
+SELECT id, full_name, picture, balance FROM users ORDER BY balance DESC, full_name ASC LIMIT 10
 `
 
 type GetLeaderboardRow struct {

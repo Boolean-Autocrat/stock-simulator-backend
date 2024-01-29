@@ -14,7 +14,7 @@ SELECT full_name, email, picture, balance FROM users WHERE id = $1;
 SELECT * FROM users WHERE email = $1;
 
 -- name: GetLeaderboard :many
-SELECT id, full_name, picture, balance FROM users ORDER BY balance, full_name DESC LIMIT 10;
+SELECT id, full_name, picture, balance FROM users ORDER BY balance DESC, full_name ASC LIMIT 10;
 
 -- name: GetUserPosition :one
 SELECT id, full_name, picture, balance, position FROM (
