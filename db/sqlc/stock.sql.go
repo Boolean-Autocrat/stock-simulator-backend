@@ -186,6 +186,53 @@ func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
 	return items, nil
 }
 
+const getTrendingStocks = `-- name: GetTrendingStocks :many
+SELECT stocks.id, stocks.name, stocks.symbol, stocks.price, stocks.quantity, stocks.is_crypto, stocks.is_stock, COUNT(price_history.id) AS price_history_count FROM stocks LEFT JOIN price_history ON stocks.id = price_history.stock_id GROUP BY stocks.id ORDER BY price_history_count DESC, stocks.name DESC LIMIT 10
+`
+
+type GetTrendingStocksRow struct {
+	ID                uuid.UUID `json:"id"`
+	Name              string    `json:"name"`
+	Symbol            string    `json:"symbol"`
+	Price             string    `json:"price"`
+	Quantity          int32     `json:"quantity"`
+	IsCrypto          bool      `json:"isCrypto"`
+	IsStock           bool      `json:"isStock"`
+	PriceHistoryCount int64     `json:"priceHistoryCount"`
+}
+
+func (q *Queries) GetTrendingStocks(ctx context.Context) ([]GetTrendingStocksRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTrendingStocks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTrendingStocksRow
+	for rows.Next() {
+		var i GetTrendingStocksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Symbol,
+			&i.Price,
+			&i.Quantity,
+			&i.IsCrypto,
+			&i.IsStock,
+			&i.PriceHistoryCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchStocks = `-- name: SearchStocks :many
 SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
 `

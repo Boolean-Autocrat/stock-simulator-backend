@@ -20,6 +20,7 @@ func NewService(queries *db.Queries) *Service {
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/stocks", s.GetStocks)
 	router.GET("/stocks/:id", s.GetStock)
+	router.GET("/stocks/trending", s.GetTrendingStocks)
 	router.GET("/stocks/search", s.SearchStocks)
 	router.GET("/stocks/:id/price_history", s.GetStockPriceHistory)
 }
@@ -55,6 +56,15 @@ func (s *Service) GetStocks(c *gin.Context) {
 		return
 	}
 
+	c.JSON(http.StatusOK, stocks)
+}
+
+func (s *Service) GetTrendingStocks(c *gin.Context) {
+	stocks, err := s.queries.GetTrendingStocks(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, stocks)
 }
 
