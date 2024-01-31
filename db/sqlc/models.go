@@ -17,6 +17,15 @@ type AccessToken struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
+type BuyOrder struct {
+	ID        uuid.UUID `json:"id"`
+	User      uuid.UUID `json:"user"`
+	Stock     uuid.UUID `json:"stock"`
+	Price     int32     `json:"price"`
+	Quantity  int32     `json:"quantity"`
+	Fulfilled int32     `json:"fulfilled"`
+}
+
 type News struct {
 	ID        uuid.UUID `json:"id"`
 	Title     string    `json:"title"`
@@ -56,6 +65,15 @@ type RefreshToken struct {
 	ExpiresAt time.Time `json:"expiresAt"`
 }
 
+type SellOrder struct {
+	ID        uuid.UUID `json:"id"`
+	User      uuid.UUID `json:"user"`
+	Stock     uuid.UUID `json:"stock"`
+	Price     int32     `json:"price"`
+	Quantity  int32     `json:"quantity"`
+	Fulfilled int32     `json:"fulfilled"`
+}
+
 type Stock struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
@@ -64,6 +82,14 @@ type Stock struct {
 	IsCrypto bool      `json:"isCrypto"`
 	IsStock  bool      `json:"isStock"`
 	Quantity int32     `json:"quantity"`
+}
+
+type Trade struct {
+	ID        uuid.UUID `json:"id"`
+	BuyOrder  uuid.UUID `json:"buyOrder"`
+	SellOrder uuid.UUID `json:"sellOrder"`
+	Price     int32     `json:"price"`
+	Quantity  int32     `json:"quantity"`
 }
 
 type User struct {
