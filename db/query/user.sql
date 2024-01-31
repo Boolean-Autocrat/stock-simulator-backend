@@ -20,3 +20,6 @@ SELECT id, full_name, picture, balance FROM users ORDER BY balance DESC, full_na
 SELECT id, full_name, picture, balance, position FROM (
   SELECT id, full_name, picture, balance, row_number() OVER (ORDER BY balance DESC) AS position FROM users
 ) AS users_with_position WHERE id = $1;
+
+-- name: GetUserBalance :one
+SELECT balance FROM users WHERE id = $1;

@@ -21,7 +21,7 @@ type BuyOrder struct {
 	ID        uuid.UUID `json:"id"`
 	User      uuid.UUID `json:"user"`
 	Stock     uuid.UUID `json:"stock"`
-	Price     int32     `json:"price"`
+	Price     float32   `json:"price"`
 	Quantity  int32     `json:"quantity"`
 	Fulfilled int32     `json:"fulfilled"`
 }
@@ -47,14 +47,15 @@ type Portfolio struct {
 	ID            uuid.UUID `json:"id"`
 	UserID        uuid.UUID `json:"userId"`
 	StockID       uuid.UUID `json:"stockId"`
-	PurchasePrice string    `json:"purchasePrice"`
+	PurchasePrice float32   `json:"purchasePrice"`
 	PurchasedAt   time.Time `json:"purchasedAt"`
+	Quantity      int32     `json:"quantity"`
 }
 
 type PriceHistory struct {
 	ID      uuid.UUID `json:"id"`
 	StockID uuid.UUID `json:"stockId"`
-	Price   string    `json:"price"`
+	Price   float32   `json:"price"`
 	PriceAt time.Time `json:"priceAt"`
 }
 
@@ -69,7 +70,7 @@ type SellOrder struct {
 	ID        uuid.UUID `json:"id"`
 	User      uuid.UUID `json:"user"`
 	Stock     uuid.UUID `json:"stock"`
-	Price     int32     `json:"price"`
+	Price     float32   `json:"price"`
 	Quantity  int32     `json:"quantity"`
 	Fulfilled int32     `json:"fulfilled"`
 }
@@ -78,7 +79,7 @@ type Stock struct {
 	ID       uuid.UUID `json:"id"`
 	Name     string    `json:"name"`
 	Symbol   string    `json:"symbol"`
-	Price    string    `json:"price"`
+	Price    float32   `json:"price"`
 	IsCrypto bool      `json:"isCrypto"`
 	IsStock  bool      `json:"isStock"`
 	Quantity int32     `json:"quantity"`
@@ -88,7 +89,7 @@ type Trade struct {
 	ID        uuid.UUID `json:"id"`
 	BuyOrder  uuid.UUID `json:"buyOrder"`
 	SellOrder uuid.UUID `json:"sellOrder"`
-	Price     int32     `json:"price"`
+	Price     float32   `json:"price"`
 	Quantity  int32     `json:"quantity"`
 }
 
@@ -97,5 +98,5 @@ type User struct {
 	FullName string    `json:"fullName"`
 	Email    string    `json:"email"`
 	Picture  string    `json:"picture"`
-	Balance  string    `json:"balance"`
+	Balance  float32   `json:"balance"`
 }

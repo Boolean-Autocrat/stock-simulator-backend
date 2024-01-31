@@ -18,8 +18,6 @@ func NewService(queries *db.Queries) *Service {
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/portfolio", s.GetPortfolio)
-	router.POST("/portfolio/sell", s.SellStock)
-	router.POST("/portfolio/buy", s.BuyStock)
 }
 
 func (s *Service) GetPortfolio(c *gin.Context) {
@@ -36,12 +34,4 @@ func (s *Service) GetPortfolio(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, portfolio)
-}
-
-func (s *Service) SellStock(c *gin.Context) {
-	return
-}
-
-func (s *Service) BuyStock(c *gin.Context) {
-	return
 }

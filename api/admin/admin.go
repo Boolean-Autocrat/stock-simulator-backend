@@ -22,11 +22,11 @@ type Service struct {
 }
 
 type StockForm struct {
-	Name        string `form:"name" binding:"required"`
-	Symbol      string `form:"symbol" binding:"required"`
-	Price       string `form:"price" binding:"required"`
-	Quantity    int32  `form:"quantity" binding:"required"`
-	StockCrypto string `form:"stock-crypto" binding:"required"`
+	Name        string  `form:"name" binding:"required"`
+	Symbol      string  `form:"symbol" binding:"required"`
+	Price       float32 `form:"price" binding:"required"`
+	Quantity    int32   `form:"quantity" binding:"required"`
+	StockCrypto string  `form:"stock-crypto" binding:"required"`
 }
 
 type NewsForm struct {

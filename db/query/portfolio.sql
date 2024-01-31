@@ -10,5 +10,11 @@ ORDER BY p.purchased_at
 LIMIT 10
 OFFSET $2;
 
+-- name: GetStocksAndQuantity :many
+SELECT SUM(quantity) AS quantity, stock_id FROM portfolio WHERE user_id = $1 GROUP BY stock_id;
+
+-- name: GetStockWithQuantity :one
+SELECT SUM(quantity) AS quantity, stock_id FROM portfolio WHERE user_id = $1 AND stock_id = $2 GROUP BY stock_id;
+
 -- name: RemoveStockFromPortfolio :exec
 DELETE FROM portfolio WHERE user_id = $1 AND stock_id = $2;

@@ -48,7 +48,7 @@ type GetLeaderboardRow struct {
 	ID       uuid.UUID `json:"id"`
 	FullName string    `json:"fullName"`
 	Picture  string    `json:"picture"`
-	Balance  string    `json:"balance"`
+	Balance  float32   `json:"balance"`
 }
 
 func (q *Queries) GetLeaderboard(ctx context.Context) ([]GetLeaderboardRow, error) {
@@ -84,10 +84,10 @@ SELECT full_name, email, picture, balance FROM users WHERE id = $1
 `
 
 type GetUserRow struct {
-	FullName string `json:"fullName"`
-	Email    string `json:"email"`
-	Picture  string `json:"picture"`
-	Balance  string `json:"balance"`
+	FullName string  `json:"fullName"`
+	Email    string  `json:"email"`
+	Picture  string  `json:"picture"`
+	Balance  float32 `json:"balance"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (GetUserRow, error) {
@@ -100,6 +100,17 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (GetUserRow, error)
 		&i.Balance,
 	)
 	return i, err
+}
+
+const getUserBalance = `-- name: GetUserBalance :one
+SELECT balance FROM users WHERE id = $1
+`
+
+func (q *Queries) GetUserBalance(ctx context.Context, id uuid.UUID) (float32, error) {
+	row := q.db.QueryRowContext(ctx, getUserBalance, id)
+	var balance float32
+	err := row.Scan(&balance)
+	return balance, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
@@ -129,7 +140,7 @@ type GetUserPositionRow struct {
 	ID       uuid.UUID `json:"id"`
 	FullName string    `json:"fullName"`
 	Picture  string    `json:"picture"`
-	Balance  string    `json:"balance"`
+	Balance  float32   `json:"balance"`
 	Position int64     `json:"position"`
 }
 

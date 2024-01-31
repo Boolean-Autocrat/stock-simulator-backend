@@ -13,13 +13,13 @@ import (
 )
 
 const addStockToPortfolio = `-- name: AddStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id, purchase_price) VALUES ($1, $2, $3) RETURNING id, user_id, stock_id, purchase_price, purchased_at
+INSERT INTO portfolio (user_id, stock_id, purchase_price) VALUES ($1, $2, $3) RETURNING id, user_id, stock_id, purchase_price, purchased_at, quantity
 `
 
 type AddStockToPortfolioParams struct {
 	UserID        uuid.UUID `json:"userId"`
 	StockID       uuid.UUID `json:"stockId"`
-	PurchasePrice string    `json:"purchasePrice"`
+	PurchasePrice float32   `json:"purchasePrice"`
 }
 
 func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfolioParams) (Portfolio, error) {
@@ -31,6 +31,7 @@ func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfol
 		&i.StockID,
 		&i.PurchasePrice,
 		&i.PurchasedAt,
+		&i.Quantity,
 	)
 	return i, err
 }
@@ -52,11 +53,11 @@ type GetPortfolioParams struct {
 
 type GetPortfolioRow struct {
 	StockID       uuid.UUID `json:"stockId"`
-	PurchasePrice string    `json:"purchasePrice"`
+	PurchasePrice float32   `json:"purchasePrice"`
 	PurchasedAt   time.Time `json:"purchasedAt"`
 	Name          string    `json:"name"`
 	Symbol        string    `json:"symbol"`
-	Price         string    `json:"price"`
+	Price         float32   `json:"price"`
 	IsCrypto      bool      `json:"isCrypto"`
 	IsStock       bool      `json:"isStock"`
 }
@@ -80,6 +81,59 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]G
 			&i.IsCrypto,
 			&i.IsStock,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getStockWithQuantity = `-- name: GetStockWithQuantity :one
+SELECT SUM(quantity) AS quantity, stock_id FROM portfolio WHERE user_id = $1 AND stock_id = $2 GROUP BY stock_id
+`
+
+type GetStockWithQuantityParams struct {
+	UserID  uuid.UUID `json:"userId"`
+	StockID uuid.UUID `json:"stockId"`
+}
+
+type GetStockWithQuantityRow struct {
+	Quantity int64     `json:"quantity"`
+	StockID  uuid.UUID `json:"stockId"`
+}
+
+func (q *Queries) GetStockWithQuantity(ctx context.Context, arg GetStockWithQuantityParams) (GetStockWithQuantityRow, error) {
+	row := q.db.QueryRowContext(ctx, getStockWithQuantity, arg.UserID, arg.StockID)
+	var i GetStockWithQuantityRow
+	err := row.Scan(&i.Quantity, &i.StockID)
+	return i, err
+}
+
+const getStocksAndQuantity = `-- name: GetStocksAndQuantity :many
+SELECT SUM(quantity) AS quantity, stock_id FROM portfolio WHERE user_id = $1 GROUP BY stock_id
+`
+
+type GetStocksAndQuantityRow struct {
+	Quantity int64     `json:"quantity"`
+	StockID  uuid.UUID `json:"stockId"`
+}
+
+func (q *Queries) GetStocksAndQuantity(ctx context.Context, userID uuid.UUID) ([]GetStocksAndQuantityRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStocksAndQuantity, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetStocksAndQuantityRow
+	for rows.Next() {
+		var i GetStocksAndQuantityRow
+		if err := rows.Scan(&i.Quantity, &i.StockID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

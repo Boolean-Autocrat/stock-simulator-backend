@@ -18,7 +18,7 @@ INSERT INTO price_history (stock_id, price) VALUES ($1, $2)
 
 type CreatePriceHistoryParams struct {
 	StockID uuid.UUID `json:"stockId"`
-	Price   string    `json:"price"`
+	Price   float32   `json:"price"`
 }
 
 func (q *Queries) CreatePriceHistory(ctx context.Context, arg CreatePriceHistoryParams) error {
@@ -31,12 +31,12 @@ INSERT INTO stocks (name, symbol, price, quantity, is_crypto, is_stock) VALUES (
 `
 
 type CreateStockParams struct {
-	Name     string `json:"name"`
-	Symbol   string `json:"symbol"`
-	Price    string `json:"price"`
-	Quantity int32  `json:"quantity"`
-	IsCrypto bool   `json:"isCrypto"`
-	IsStock  bool   `json:"isStock"`
+	Name     string  `json:"name"`
+	Symbol   string  `json:"symbol"`
+	Price    float32 `json:"price"`
+	Quantity int32   `json:"quantity"`
+	IsCrypto bool    `json:"isCrypto"`
+	IsStock  bool    `json:"isStock"`
 }
 
 func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock, error) {
@@ -66,11 +66,11 @@ SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE 
 `
 
 type GetStockParams struct {
-	Name     string `json:"name"`
-	IsCrypto bool   `json:"isCrypto"`
-	IsStock  bool   `json:"isStock"`
-	Symbol   string `json:"symbol"`
-	Price    string `json:"price"`
+	Name     string  `json:"name"`
+	IsCrypto bool    `json:"isCrypto"`
+	IsStock  bool    `json:"isStock"`
+	Symbol   string  `json:"symbol"`
+	Price    float32 `json:"price"`
 }
 
 func (q *Queries) GetStock(ctx context.Context, arg GetStockParams) (Stock, error) {
@@ -124,7 +124,7 @@ type GetStockPriceHistoryByDateParams struct {
 }
 
 type GetStockPriceHistoryByDateRow struct {
-	Price   string    `json:"price"`
+	Price   float32   `json:"price"`
 	PriceAt time.Time `json:"priceAt"`
 }
 
@@ -194,7 +194,7 @@ type GetTrendingStocksRow struct {
 	ID                uuid.UUID `json:"id"`
 	Name              string    `json:"name"`
 	Symbol            string    `json:"symbol"`
-	Price             string    `json:"price"`
+	Price             float32   `json:"price"`
 	Quantity          int32     `json:"quantity"`
 	IsCrypto          bool      `json:"isCrypto"`
 	IsStock           bool      `json:"isStock"`

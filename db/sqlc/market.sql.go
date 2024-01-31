@@ -12,15 +12,16 @@ import (
 )
 
 const addBuyOrder = `-- name: AddBuyOrder :exec
-INSERT INTO buy_orders ("id", "user", "stock", "price", "quantity") VALUES ($1, $2, $3, $4, $5)
+INSERT INTO buy_orders ("id", "user", "stock", "price", "quantity", "fulfilled") VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type AddBuyOrderParams struct {
-	ID       uuid.UUID `json:"id"`
-	User     uuid.UUID `json:"user"`
-	Stock    uuid.UUID `json:"stock"`
-	Price    int32     `json:"price"`
-	Quantity int32     `json:"quantity"`
+	ID        uuid.UUID `json:"id"`
+	User      uuid.UUID `json:"user"`
+	Stock     uuid.UUID `json:"stock"`
+	Price     float32   `json:"price"`
+	Quantity  int32     `json:"quantity"`
+	Fulfilled int32     `json:"fulfilled"`
 }
 
 func (q *Queries) AddBuyOrder(ctx context.Context, arg AddBuyOrderParams) error {
@@ -30,20 +31,22 @@ func (q *Queries) AddBuyOrder(ctx context.Context, arg AddBuyOrderParams) error 
 		arg.Stock,
 		arg.Price,
 		arg.Quantity,
+		arg.Fulfilled,
 	)
 	return err
 }
 
 const addSellOrder = `-- name: AddSellOrder :exec
-INSERT INTO sell_orders ("id", "user", "stock", "price", "quantity") VALUES ($1, $2, $3, $4, $5)
+INSERT INTO sell_orders ("id", "user", "stock", "price", "quantity", "fulfilled") VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type AddSellOrderParams struct {
-	ID       uuid.UUID `json:"id"`
-	User     uuid.UUID `json:"user"`
-	Stock    uuid.UUID `json:"stock"`
-	Price    int32     `json:"price"`
-	Quantity int32     `json:"quantity"`
+	ID        uuid.UUID `json:"id"`
+	User      uuid.UUID `json:"user"`
+	Stock     uuid.UUID `json:"stock"`
+	Price     float32   `json:"price"`
+	Quantity  int32     `json:"quantity"`
+	Fulfilled int32     `json:"fulfilled"`
 }
 
 func (q *Queries) AddSellOrder(ctx context.Context, arg AddSellOrderParams) error {
@@ -53,6 +56,7 @@ func (q *Queries) AddSellOrder(ctx context.Context, arg AddSellOrderParams) erro
 		arg.Stock,
 		arg.Price,
 		arg.Quantity,
+		arg.Fulfilled,
 	)
 	return err
 }
@@ -65,7 +69,7 @@ type AddTradeParams struct {
 	ID        uuid.UUID `json:"id"`
 	BuyOrder  uuid.UUID `json:"buyOrder"`
 	SellOrder uuid.UUID `json:"sellOrder"`
-	Price     int32     `json:"price"`
+	Price     float32   `json:"price"`
 	Quantity  int32     `json:"quantity"`
 }
 
@@ -80,19 +84,29 @@ func (q *Queries) AddTrade(ctx context.Context, arg AddTradeParams) error {
 	return err
 }
 
-const getClosedBuyOrders = `-- name: GetClosedBuyOrders :many
-SELECT id, "user", stock, price, quantity, fulfilled FROM buy_orders WHERE "user" = $1 AND "fulfilled" = "quantity"
+const getAllBuyOrdersByUser = `-- name: GetAllBuyOrdersByUser :many
+SELECT id, "user", stock, price, quantity, fulfilled, fulfilled < quantity AS is_complete FROM buy_orders WHERE "user" = $1
 `
 
-func (q *Queries) GetClosedBuyOrders(ctx context.Context, user uuid.UUID) ([]BuyOrder, error) {
-	rows, err := q.db.QueryContext(ctx, getClosedBuyOrders, user)
+type GetAllBuyOrdersByUserRow struct {
+	ID         uuid.UUID `json:"id"`
+	User       uuid.UUID `json:"user"`
+	Stock      uuid.UUID `json:"stock"`
+	Price      float32   `json:"price"`
+	Quantity   int32     `json:"quantity"`
+	Fulfilled  int32     `json:"fulfilled"`
+	IsComplete bool      `json:"isComplete"`
+}
+
+func (q *Queries) GetAllBuyOrdersByUser(ctx context.Context, user uuid.UUID) ([]GetAllBuyOrdersByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllBuyOrdersByUser, user)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []BuyOrder
+	var items []GetAllBuyOrdersByUserRow
 	for rows.Next() {
-		var i BuyOrder
+		var i GetAllBuyOrdersByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.User,
@@ -100,6 +114,7 @@ func (q *Queries) GetClosedBuyOrders(ctx context.Context, user uuid.UUID) ([]Buy
 			&i.Price,
 			&i.Quantity,
 			&i.Fulfilled,
+			&i.IsComplete,
 		); err != nil {
 			return nil, err
 		}
@@ -114,53 +129,29 @@ func (q *Queries) GetClosedBuyOrders(ctx context.Context, user uuid.UUID) ([]Buy
 	return items, nil
 }
 
-const getClosedSellOrders = `-- name: GetClosedSellOrders :many
-SELECT id, "user", stock, price, quantity, fulfilled FROM sell_orders WHERE "user" = $1 AND "fulfilled" = "quantity"
+const getAllSellOrdersByUser = `-- name: GetAllSellOrdersByUser :many
+SELECT id, "user", stock, price, quantity, fulfilled, fulfilled < quantity AS is_complete FROM sell_orders WHERE "user" = $1
 `
 
-func (q *Queries) GetClosedSellOrders(ctx context.Context, user uuid.UUID) ([]SellOrder, error) {
-	rows, err := q.db.QueryContext(ctx, getClosedSellOrders, user)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []SellOrder
-	for rows.Next() {
-		var i SellOrder
-		if err := rows.Scan(
-			&i.ID,
-			&i.User,
-			&i.Stock,
-			&i.Price,
-			&i.Quantity,
-			&i.Fulfilled,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type GetAllSellOrdersByUserRow struct {
+	ID         uuid.UUID `json:"id"`
+	User       uuid.UUID `json:"user"`
+	Stock      uuid.UUID `json:"stock"`
+	Price      float32   `json:"price"`
+	Quantity   int32     `json:"quantity"`
+	Fulfilled  int32     `json:"fulfilled"`
+	IsComplete bool      `json:"isComplete"`
 }
 
-const getOpenBuyOrders = `-- name: GetOpenBuyOrders :many
-SELECT id, "user", stock, price, quantity, fulfilled FROM buy_orders WHERE "user" = $1 AND "fulfilled" < "quantity"
-`
-
-func (q *Queries) GetOpenBuyOrders(ctx context.Context, user uuid.UUID) ([]BuyOrder, error) {
-	rows, err := q.db.QueryContext(ctx, getOpenBuyOrders, user)
+func (q *Queries) GetAllSellOrdersByUser(ctx context.Context, user uuid.UUID) ([]GetAllSellOrdersByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAllSellOrdersByUser, user)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []BuyOrder
+	var items []GetAllSellOrdersByUserRow
 	for rows.Next() {
-		var i BuyOrder
+		var i GetAllSellOrdersByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.User,
@@ -168,40 +159,7 @@ func (q *Queries) GetOpenBuyOrders(ctx context.Context, user uuid.UUID) ([]BuyOr
 			&i.Price,
 			&i.Quantity,
 			&i.Fulfilled,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getOpenSellOrders = `-- name: GetOpenSellOrders :many
-SELECT id, "user", stock, price, quantity, fulfilled FROM sell_orders WHERE "user" = $1 AND "fulfilled" < "quantity"
-`
-
-func (q *Queries) GetOpenSellOrders(ctx context.Context, user uuid.UUID) ([]SellOrder, error) {
-	rows, err := q.db.QueryContext(ctx, getOpenSellOrders, user)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []SellOrder
-	for rows.Next() {
-		var i SellOrder
-		if err := rows.Scan(
-			&i.ID,
-			&i.User,
-			&i.Stock,
-			&i.Price,
-			&i.Quantity,
-			&i.Fulfilled,
+			&i.IsComplete,
 		); err != nil {
 			return nil, err
 		}
@@ -282,6 +240,20 @@ func (q *Queries) ListSellOrders(ctx context.Context, stock uuid.UUID) ([]SellOr
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateBalance = `-- name: UpdateBalance :exec
+UPDATE users SET balance = balance + $1 WHERE id = $2
+`
+
+type UpdateBalanceParams struct {
+	Balance float32   `json:"balance"`
+	ID      uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) error {
+	_, err := q.db.ExecContext(ctx, updateBalance, arg.Balance, arg.ID)
+	return err
 }
 
 const updateBuyOrder = `-- name: UpdateBuyOrder :exec

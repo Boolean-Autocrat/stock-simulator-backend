@@ -17,11 +17,11 @@ func NewService(queries *db.Queries) *Service {
 }
 
 type LeaderboardItem struct {
-	FullName string `json:"fullName"`
-	Balance  string `json:"balance"`
-	Position int    `json:"position"`
-	Picture  string `json:"picture"`
-	IsYou    bool   `json:"isYou"`
+	FullName string  `json:"fullName"`
+	Balance  float32 `json:"balance"`
+	Position int     `json:"position"`
+	Picture  string  `json:"picture"`
+	IsYou    bool    `json:"isYou"`
 }
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
