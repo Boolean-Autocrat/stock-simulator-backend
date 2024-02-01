@@ -27,7 +27,7 @@ func (q *Queries) CreatePriceHistory(ctx context.Context, arg CreatePriceHistory
 }
 
 const createStock = `-- name: CreateStock :one
-INSERT INTO stocks (name, symbol, price, quantity, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, symbol, price, is_crypto, is_stock, quantity
+INSERT INTO stocks (name, symbol, price, quantity, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change
 `
 
 type CreateStockParams struct {
@@ -57,12 +57,14 @@ func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock
 		&i.IsCrypto,
 		&i.IsStock,
 		&i.Quantity,
+		&i.Trend,
+		&i.PercentChange,
 	)
 	return i, err
 }
 
 const getStock = `-- name: GetStock :one
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE name = $1 AND is_crypto = $2 AND is_stock = $3 AND symbol = $4 AND price = $5
+SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change FROM stocks WHERE name = $1 AND is_crypto = $2 AND is_stock = $3 AND symbol = $4 AND price = $5
 `
 
 type GetStockParams struct {
@@ -90,12 +92,14 @@ func (q *Queries) GetStock(ctx context.Context, arg GetStockParams) (Stock, erro
 		&i.IsCrypto,
 		&i.IsStock,
 		&i.Quantity,
+		&i.Trend,
+		&i.PercentChange,
 	)
 	return i, err
 }
 
 const getStockById = `-- name: GetStockById :one
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE id = $1
+SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change FROM stocks WHERE id = $1
 `
 
 func (q *Queries) GetStockById(ctx context.Context, id uuid.UUID) (Stock, error) {
@@ -109,34 +113,30 @@ func (q *Queries) GetStockById(ctx context.Context, id uuid.UUID) (Stock, error)
 		&i.IsCrypto,
 		&i.IsStock,
 		&i.Quantity,
+		&i.Trend,
+		&i.PercentChange,
 	)
 	return i, err
 }
 
-const getStockPriceHistoryByDate = `-- name: GetStockPriceHistoryByDate :many
-SELECT price, price_at FROM price_history WHERE stock_id = $1 AND price_at >= $2 AND price_at <= $3
+const getStockPriceHistory = `-- name: GetStockPriceHistory :many
+SELECT price, price_at FROM price_history WHERE stock_id = $1 ORDER BY price_at DESC
 `
 
-type GetStockPriceHistoryByDateParams struct {
-	StockID   uuid.UUID `json:"stockId"`
-	PriceAt   time.Time `json:"priceAt"`
-	PriceAt_2 time.Time `json:"priceAt2"`
-}
-
-type GetStockPriceHistoryByDateRow struct {
+type GetStockPriceHistoryRow struct {
 	Price   float32   `json:"price"`
 	PriceAt time.Time `json:"priceAt"`
 }
 
-func (q *Queries) GetStockPriceHistoryByDate(ctx context.Context, arg GetStockPriceHistoryByDateParams) ([]GetStockPriceHistoryByDateRow, error) {
-	rows, err := q.db.QueryContext(ctx, getStockPriceHistoryByDate, arg.StockID, arg.PriceAt, arg.PriceAt_2)
+func (q *Queries) GetStockPriceHistory(ctx context.Context, stockID uuid.UUID) ([]GetStockPriceHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStockPriceHistory, stockID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetStockPriceHistoryByDateRow
+	var items []GetStockPriceHistoryRow
 	for rows.Next() {
-		var i GetStockPriceHistoryByDateRow
+		var i GetStockPriceHistoryRow
 		if err := rows.Scan(&i.Price, &i.PriceAt); err != nil {
 			return nil, err
 		}
@@ -152,7 +152,7 @@ func (q *Queries) GetStockPriceHistoryByDate(ctx context.Context, arg GetStockPr
 }
 
 const getStocks = `-- name: GetStocks :many
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks
+SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change FROM stocks
 `
 
 func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
@@ -172,6 +172,8 @@ func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
 			&i.IsCrypto,
 			&i.IsStock,
 			&i.Quantity,
+			&i.Trend,
+			&i.PercentChange,
 		); err != nil {
 			return nil, err
 		}
@@ -234,7 +236,7 @@ func (q *Queries) GetTrendingStocks(ctx context.Context) ([]GetTrendingStocksRow
 }
 
 const searchStocks = `-- name: SearchStocks :many
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
 `
 
 func (q *Queries) SearchStocks(ctx context.Context, lower string) ([]Stock, error) {
@@ -254,6 +256,8 @@ func (q *Queries) SearchStocks(ctx context.Context, lower string) ([]Stock, erro
 			&i.IsCrypto,
 			&i.IsStock,
 			&i.Quantity,
+			&i.Trend,
+			&i.PercentChange,
 		); err != nil {
 			return nil, err
 		}

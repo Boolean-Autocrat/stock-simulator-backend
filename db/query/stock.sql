@@ -13,8 +13,8 @@ SELECT * FROM stocks;
 -- name: SearchStocks :many
 SELECT * FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%';
 
--- name: GetStockPriceHistoryByDate :many
-SELECT price, price_at FROM price_history WHERE stock_id = $1 AND price_at >= $2 AND price_at <= $3;
+-- name: GetStockPriceHistory :many
+SELECT price, price_at FROM price_history WHERE stock_id = $1 ORDER BY price_at DESC;
 
 -- name: CreatePriceHistory :exec
 INSERT INTO price_history (stock_id, price) VALUES ($1, $2);

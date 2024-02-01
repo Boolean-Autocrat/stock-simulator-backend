@@ -2,7 +2,6 @@ package stocks
 
 import (
 	"net/http"
-	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -55,7 +54,6 @@ func (s *Service) GetStocks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	c.JSON(http.StatusOK, stocks)
 }
 
@@ -88,32 +86,7 @@ func (s *Service) GetStockPriceHistory(c *gin.Context) {
 		return
 	}
 
-	var startDate, endDate time.Time
-
-	if c.Query("start_date") != "" && c.Query("end_date") != "" {
-		startDate, err = time.Parse(time.RFC3339, c.Param("start"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid start date"})
-			return
-		}
-
-		endDate, err = time.Parse(time.RFC3339, c.Param("end"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid end date"})
-			return
-		}
-	} else {
-		startDate = time.Now().AddDate(-3, 0, 0)
-		endDate = time.Now().AddDate(0, 0, 1)
-	}
-
-	params := db.GetStockPriceHistoryByDateParams{
-		StockID:   stockID,
-		PriceAt:   startDate,
-		PriceAt_2: endDate,
-	}
-
-	priceHistory, err := s.queries.GetStockPriceHistoryByDate(c, params)
+	priceHistory, err := s.queries.GetStockPriceHistory(c, stockID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

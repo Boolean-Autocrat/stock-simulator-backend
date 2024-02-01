@@ -76,13 +76,15 @@ type SellOrder struct {
 }
 
 type Stock struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	Symbol   string    `json:"symbol"`
-	Price    float32   `json:"price"`
-	IsCrypto bool      `json:"isCrypto"`
-	IsStock  bool      `json:"isStock"`
-	Quantity int32     `json:"quantity"`
+	ID            uuid.UUID `json:"id"`
+	Name          string    `json:"name"`
+	Symbol        string    `json:"symbol"`
+	Price         float32   `json:"price"`
+	IsCrypto      bool      `json:"isCrypto"`
+	IsStock       bool      `json:"isStock"`
+	Quantity      int32     `json:"quantity"`
+	Trend         string    `json:"trend"`
+	PercentChange float32   `json:"percentChange"`
 }
 
 type Trade struct {
