@@ -17,10 +17,10 @@ INSERT INTO buy_orders ("id", "user", "stock", "price", "quantity", "fulfilled")
 INSERT INTO trades ("id", "buy_order", "sell_order", "price", "quantity") VALUES ($1, $2, $3, $4, $5);
 
 -- name: GetAllSellOrdersByUser :many
-SELECT *, fulfilled < quantity AS is_complete FROM sell_orders WHERE "user" = $1;
+SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM sell_orders WHERE "user" = $1;
 
 -- name: GetAllBuyOrdersByUser :many
-SELECT *, fulfilled < quantity AS is_complete FROM buy_orders WHERE "user" = $1;
+SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM buy_orders WHERE "user" = $1;
 
 -- name: ListBuyOrders :many
 SELECT * FROM buy_orders WHERE "stock" = $1 AND "fulfilled" < "quantity" ORDER BY "price" DESC;

@@ -25,25 +25,10 @@ func init() {
 }
 
 func main() {
-	// brokerAddrs := []string{"localhost:9092"}
-	// config := sarama.NewConfig()
-	// saramaAdmin, err := sarama.NewClusterAdmin(brokerAddrs, config)
-	// if err != nil {
-	// 	log.Fatal("Error while creating cluster admin: ", err.Error())
-	// }
-	// defer func() { _ = saramaAdmin.Close() }()
-	// err = saramaAdmin.("topic.test.1", &sarama.TopicDetail{
-	// 	NumPartitions:     1,
-	// 	ReplicationFactor: 1,
-	// }, false)
-	// if err != nil {
-	// 	log.Fatal("Error while creating topic: ", err.Error())
-	// }
 	postgres, err := db.NewPostgres(os.Getenv("POSTGRES_USER"), os.Getenv("POSTGRES_PASSWORD"), os.Getenv("POSTGRES_DB"), os.Getenv("DB_HOST"))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
 	queries := db.New(postgres.DB)
 	adminService := admin.NewService(queries)
 	authService := userAuth.NewService(queries)
@@ -70,6 +55,49 @@ func main() {
 	portfolioService.RegisterHandlers(router)
 	leaderboardService.RegisterHandlers(router)
 	marketService.RegisterHandlers(router)
+	// p, err := kafka.NewProducer(&kafka.ConfigMap{
+	// 	"bootstrap.servers": "host1:9092",
+	// 	"client.id":         "stock-simulator-exchange",
+	// 	"acks":              "all",
+	// })
+	// if err != nil {
+	// 	fmt.Printf("Failed to create producer: %s\n", err)
+	// 	os.Exit(1)
+	// }
+	// consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
+	// 	"bootstrap.servers": "host1:9092,host2:9092",
+	// 	"group.id":          "foo",
+	// 	"auto.offset.reset": "smallest"})
+	// if err != nil {
+	// 	fmt.Printf("Failed to create consumer: %s\n", err)
+	// 	os.Exit(1)
+	// }
+	// book := engine.OrderBook{
+	// 	BuyOrders:  make([]engine.Order, 0, 1000),
+	// 	SellOrders: make([]engine.Order, 0, 1000),
+	// }
 
+	// done := make(chan bool)
+	// tradesTopic := "trades"
+	// go func() {
+	// 	for {
+	// 		msg, _ := consumer.ReadMessage(-1)
+	// 		var order engine.Order
+	// 		order.FromJSON(msg.Value)
+	// 		trades := book.Process(order)
+	// 		for _, trade := range trades {
+	// 			rawTrade := trade.ToJSON()
+	// 			p.Produce(&kafka.Message{
+	// 				TopicPartition: kafka.TopicPartition{
+	// 					Topic: &tradesTopic,
+	// 					// Partition: kafka.PartitionAny, // TODO: Add partitioning by stock symbol
+	// 				},
+	// 				Value: rawTrade,
+	// 			}, nil)
+	// 		}
+	// 		consumer.CommitMessage(msg)
+	// 	}
+	// 	done <- true
+	// }()
 	router.Run()
 }

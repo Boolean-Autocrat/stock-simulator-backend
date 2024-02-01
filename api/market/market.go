@@ -37,7 +37,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 	}
 	var req Order
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON payload!"})
 		return
 	}
 	userStock, err := s.queries.GetStockWithQuantity(c, db.GetStockWithQuantityParams{
@@ -45,7 +45,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 		StockID: req.Stock,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		c.JSON(http.StatusOK, gin.H{"message": "You do not own enough of this stock!"})
 		return
 	}
 	if int32(userStock.Quantity) < int32(req.Quantity) {
@@ -58,7 +58,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 		return
 	}
 	n := len(buyOrders)
-	if n != 0 || buyOrders[n-1].Price <= req.Price {
+	if n != 0 && buyOrders[n-1].Price <= req.Price {
 		for i := n - 1; i >= 0; i-- {
 			buyOrder := buyOrders[i]
 			if buyOrder.Price < req.Price {
@@ -85,16 +85,13 @@ func (s *Service) sellAsset(c *gin.Context) {
 					ID:        sellID,
 					User:      userId.(uuid.UUID),
 					Stock:     req.Stock,
+					Price:     req.Price,
 					Quantity:  int32(req.Quantity),
 					Fulfilled: int32(req.Quantity),
 				})
 				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 					ID:      userId.(uuid.UUID),
 					Balance: req.Price * float32(req.Quantity),
-				})
-				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
-					ID:      buyOrder.User,
-					Balance: -req.Price * float32(req.Quantity),
 				})
 				c.JSON(http.StatusOK, gin.H{"message": "Order successfully processed and matched!"})
 				return
@@ -120,10 +117,6 @@ func (s *Service) sellAsset(c *gin.Context) {
 					ID:      userId.(uuid.UUID),
 					Balance: req.Price * float32(buyOrder.Quantity-buyOrder.Fulfilled),
 				})
-				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
-					ID:      buyOrder.User,
-					Balance: -req.Price * float32(buyOrder.Quantity-buyOrder.Fulfilled),
-				})
 				req.Quantity -= int(buyOrder.Quantity - buyOrder.Fulfilled)
 				continue
 			}
@@ -132,6 +125,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 	s.queries.AddSellOrder(c, db.AddSellOrderParams{
 		ID:        sellID,
 		User:      userId.(uuid.UUID),
+		Price:     req.Price,
 		Stock:     req.Stock,
 		Quantity:  int32(req.Quantity),
 		Fulfilled: 0,
@@ -158,7 +152,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 	}
 	var req Order
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON payload!"})
 		return
 	}
 	if userBalance < req.Price*float32(req.Quantity) {
@@ -170,8 +164,12 @@ func (s *Service) buyAsset(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
+	s.queries.UpdateBalance(c, db.UpdateBalanceParams{
+		ID:      userId.(uuid.UUID),
+		Balance: -req.Price * float32(req.Quantity),
+	})
 	n := len(sellOrders)
-	if n != 0 || sellOrders[n-1].Price >= req.Price {
+	if n != 0 && sellOrders[n-1].Price >= req.Price {
 		for i := n - 1; i >= 0; i-- {
 			sellOrder := sellOrders[i]
 			if sellOrder.Price > req.Price {
@@ -197,13 +195,10 @@ func (s *Service) buyAsset(c *gin.Context) {
 				s.queries.AddBuyOrder(c, db.AddBuyOrderParams{
 					ID:        buyID,
 					User:      userId.(uuid.UUID),
+					Price:     req.Price,
 					Stock:     req.Stock,
 					Quantity:  int32(req.Quantity),
 					Fulfilled: int32(req.Quantity),
-				})
-				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
-					ID:      userId.(uuid.UUID),
-					Balance: -req.Price * float32(req.Quantity),
 				})
 				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 					ID:      sellOrder.User,
@@ -230,10 +225,6 @@ func (s *Service) buyAsset(c *gin.Context) {
 					Fulfilled: sellOrder.Quantity,
 				})
 				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
-					ID:      userId.(uuid.UUID),
-					Balance: -req.Price * float32(sellOrder.Quantity-sellOrder.Fulfilled),
-				})
-				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 					ID:      sellOrder.User,
 					Balance: req.Price * float32(sellOrder.Quantity-sellOrder.Fulfilled),
 				})
@@ -246,6 +237,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 		ID:        buyID,
 		User:      userId.(uuid.UUID),
 		Stock:     req.Stock,
+		Price:     req.Price,
 		Quantity:  int32(req.Quantity),
 		Fulfilled: 0,
 	})

@@ -85,12 +85,10 @@ func (q *Queries) AddTrade(ctx context.Context, arg AddTradeParams) error {
 }
 
 const getAllBuyOrdersByUser = `-- name: GetAllBuyOrdersByUser :many
-SELECT id, "user", stock, price, quantity, fulfilled, fulfilled < quantity AS is_complete FROM buy_orders WHERE "user" = $1
+SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM buy_orders WHERE "user" = $1
 `
 
 type GetAllBuyOrdersByUserRow struct {
-	ID         uuid.UUID `json:"id"`
-	User       uuid.UUID `json:"user"`
 	Stock      uuid.UUID `json:"stock"`
 	Price      float32   `json:"price"`
 	Quantity   int32     `json:"quantity"`
@@ -108,8 +106,6 @@ func (q *Queries) GetAllBuyOrdersByUser(ctx context.Context, user uuid.UUID) ([]
 	for rows.Next() {
 		var i GetAllBuyOrdersByUserRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.User,
 			&i.Stock,
 			&i.Price,
 			&i.Quantity,
@@ -130,12 +126,10 @@ func (q *Queries) GetAllBuyOrdersByUser(ctx context.Context, user uuid.UUID) ([]
 }
 
 const getAllSellOrdersByUser = `-- name: GetAllSellOrdersByUser :many
-SELECT id, "user", stock, price, quantity, fulfilled, fulfilled < quantity AS is_complete FROM sell_orders WHERE "user" = $1
+SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM sell_orders WHERE "user" = $1
 `
 
 type GetAllSellOrdersByUserRow struct {
-	ID         uuid.UUID `json:"id"`
-	User       uuid.UUID `json:"user"`
 	Stock      uuid.UUID `json:"stock"`
 	Price      float32   `json:"price"`
 	Quantity   int32     `json:"quantity"`
@@ -153,8 +147,6 @@ func (q *Queries) GetAllSellOrdersByUser(ctx context.Context, user uuid.UUID) ([
 	for rows.Next() {
 		var i GetAllSellOrdersByUserRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.User,
 			&i.Stock,
 			&i.Price,
 			&i.Quantity,
