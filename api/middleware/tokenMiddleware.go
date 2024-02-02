@@ -28,7 +28,7 @@ func NewService(queries *db.Queries) *Service {
 
 func (s *Service) TokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.FullPath() == "/admin/login" {
+		if c.FullPath() == "/admin/login" || c.FullPath() == "/courses" {
 			c.Next()
 			return
 		} else if strings.Contains(c.FullPath(), "/admin") {
