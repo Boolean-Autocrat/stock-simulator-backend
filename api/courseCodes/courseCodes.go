@@ -18,7 +18,7 @@ func NewService(queries *db.Queries) *Service {
 }
 
 func (s *Service) RegisterHandlers(router *gin.Engine) {
-	router.POST("/courses", s.courses)
+	router.GET("/courses", s.courses)
 }
 
 type Course struct {
