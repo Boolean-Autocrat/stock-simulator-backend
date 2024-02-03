@@ -16,6 +16,7 @@ COPY start.sh .
 COPY wait-for-it.sh .
 COPY templates /app/templates
 COPY assets /app/assets
+COPY courseCodes.json .
 RUN chmod +x start.sh
 RUN chmod +x wait-for-it.sh
 COPY db/migrations ./migration

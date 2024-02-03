@@ -22,27 +22,26 @@ func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/courses", s.courses)
 }
 
-type Course struct {
-	Department string `json:"department"`
-	Year       string `json:"year"`
-	CourseCode string `json:"courseCode"`
-	CourseName string `json:"courseName"`
-}
-
-type CourseData struct {
-	Courses []Course `json:"courses"`
-}
-
 func (s *Service) courses(c *gin.Context) {
+	type Course struct {
+		Department string `json:"department"`
+		Year       string `json:"year"`
+		CourseCode string `json:"courseCode"`
+		CourseName string `json:"courseName"`
+	}
+
+	type CourseData struct {
+		Courses []Course `json:"courses"`
+	}
 	filename := "courseCodes.json"
 	data, err := os.Open(filename)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read the JSON file"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer data.Close()
 	byteValue, _ := ioutil.ReadAll(data)
 	var courseData CourseData
 	json.Unmarshal(byteValue, &courseData)
-	c.JSON(http.StatusOK, gin.H{"courses": courseData.Courses})
+	c.JSON(200, courseData)
 }
