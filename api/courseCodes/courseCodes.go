@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -34,17 +35,14 @@ type CourseData struct {
 
 func (s *Service) courses(c *gin.Context) {
 	filename := "courseCodes.json"
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.Open(filename)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read the JSON file"})
 		return
 	}
-
+	defer data.Close()
+	byteValue, _ := ioutil.ReadAll(data)
 	var courseData CourseData
-	err = json.Unmarshal(data, &courseData)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse JSON data"})
-		return
-	}
+	json.Unmarshal(byteValue, &courseData)
 	c.JSON(http.StatusOK, gin.H{"courses": courseData.Courses})
 }
