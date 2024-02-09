@@ -45,7 +45,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		return
 	}
 	buyErr := s.queries.BuyStock(c, db.BuyStockParams{
-		InCirculation: stock.Quantity,
+		InCirculation: int32(req.Amount),
 		ID:            req.StockID,
 	})
 	if buyErr != nil {
