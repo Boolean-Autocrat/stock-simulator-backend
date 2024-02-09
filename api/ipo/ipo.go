@@ -26,6 +26,7 @@ type ipoBuyRequest struct {
 }
 
 func (s *Service) ipoBuy(c *gin.Context) {
+	userID := c.MustGet("userID").(uuid.UUID)
 	var req ipoBuyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
@@ -48,5 +49,17 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, buyErr.Error())
 		return
 	}
-	c.JSON(http.StatusOK, "Stock purchased successfully")
+	addPortfolio, err := s.queries.AddStockToPortfolio(c, db.AddStockToPortfolioParams{
+		StockID:  req.StockID,
+		UserID:   userID,
+		Quantity: int32(req.Amount),
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Stock purchased successfully",
+		"stock":   addPortfolio,
+	})
 }

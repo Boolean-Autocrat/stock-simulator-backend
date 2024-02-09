@@ -1,5 +1,5 @@
 -- name: AddStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id) VALUES ($1, $2) RETURNING *;
+INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) RETURNING *;
 
 -- name: GetPortfolio :many
 SELECT p.stock_id, s.name, s.symbol, s.price, s.is_crypto, s.is_stock

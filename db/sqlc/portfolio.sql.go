@@ -12,16 +12,17 @@ import (
 )
 
 const addStockToPortfolio = `-- name: AddStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id) VALUES ($1, $2) RETURNING id, user_id, stock_id, quantity
+INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) RETURNING id, user_id, stock_id, quantity
 `
 
 type AddStockToPortfolioParams struct {
-	UserID  uuid.UUID `json:"userId"`
-	StockID uuid.UUID `json:"stockId"`
+	UserID   uuid.UUID `json:"userId"`
+	StockID  uuid.UUID `json:"stockId"`
+	Quantity int32     `json:"quantity"`
 }
 
 func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfolioParams) (Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, addStockToPortfolio, arg.UserID, arg.StockID)
+	row := q.db.QueryRowContext(ctx, addStockToPortfolio, arg.UserID, arg.StockID, arg.Quantity)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
