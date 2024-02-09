@@ -63,6 +63,15 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
+	balanceErr := s.queries.UpdateBalance(c, db.UpdateBalanceParams{
+		ID:      userID,
+		Balance: -(float32(req.Amount) * stock.Price),
+	})
+	if balanceErr != nil {
+		log.Print(balanceErr.Error())
+		c.JSON(http.StatusBadRequest, balanceErr.Error())
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Stock purchased successfully",
 		"stock":   addPortfolio,
