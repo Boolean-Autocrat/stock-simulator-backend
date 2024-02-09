@@ -21,3 +21,6 @@ INSERT INTO price_history (stock_id, price) VALUES ($1, $2);
 
 -- name: GetTrendingStocks :many
 SELECT stocks.id, stocks.name, stocks.symbol, stocks.price, stocks.quantity, stocks.is_crypto, stocks.is_stock, COUNT(price_history.id) AS price_history_count FROM stocks LEFT JOIN price_history ON stocks.id = price_history.stock_id GROUP BY stocks.id ORDER BY price_history_count DESC, stocks.name ASC LIMIT 10;
+
+-- name: BuyStock :exec
+UPDATE stocks SET in_circulation = in_circulation + $1 WHERE id = $2;

@@ -44,12 +44,16 @@ type NewsSentiment struct {
 }
 
 type Portfolio struct {
-	ID            uuid.UUID `json:"id"`
-	UserID        uuid.UUID `json:"userId"`
-	StockID       uuid.UUID `json:"stockId"`
-	PurchasePrice float32   `json:"purchasePrice"`
+	ID       uuid.UUID `json:"id"`
+	UserID   uuid.UUID `json:"userId"`
+	StockID  uuid.UUID `json:"stockId"`
+	Quantity int32     `json:"quantity"`
+}
+
+type PortfolioPurchaseHistory struct {
+	PortfolioID   uuid.UUID `json:"portfolioId"`
+	PurchasePrice string    `json:"purchasePrice"`
 	PurchasedAt   time.Time `json:"purchasedAt"`
-	Quantity      int32     `json:"quantity"`
 }
 
 type PriceHistory struct {
@@ -85,6 +89,7 @@ type Stock struct {
 	Quantity      int32     `json:"quantity"`
 	Trend         string    `json:"trend"`
 	PercentChange float32   `json:"percentChange"`
+	InCirculation int32     `json:"inCirculation"`
 }
 
 type Trade struct {

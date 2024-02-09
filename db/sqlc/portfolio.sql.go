@@ -7,41 +7,36 @@ package db
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
 
 const addStockToPortfolio = `-- name: AddStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id, purchase_price) VALUES ($1, $2, $3) RETURNING id, user_id, stock_id, purchase_price, purchased_at, quantity
+INSERT INTO portfolio (user_id, stock_id) VALUES ($1, $2) RETURNING id, user_id, stock_id, quantity
 `
 
 type AddStockToPortfolioParams struct {
-	UserID        uuid.UUID `json:"userId"`
-	StockID       uuid.UUID `json:"stockId"`
-	PurchasePrice float32   `json:"purchasePrice"`
+	UserID  uuid.UUID `json:"userId"`
+	StockID uuid.UUID `json:"stockId"`
 }
 
 func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfolioParams) (Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, addStockToPortfolio, arg.UserID, arg.StockID, arg.PurchasePrice)
+	row := q.db.QueryRowContext(ctx, addStockToPortfolio, arg.UserID, arg.StockID)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.StockID,
-		&i.PurchasePrice,
-		&i.PurchasedAt,
 		&i.Quantity,
 	)
 	return i, err
 }
 
 const getPortfolio = `-- name: GetPortfolio :many
-SELECT p.stock_id, p.purchase_price, p.purchased_at, s.name, s.symbol, s.price, s.is_crypto, s.is_stock
+SELECT p.stock_id, s.name, s.symbol, s.price, s.is_crypto, s.is_stock
 FROM portfolio p
 JOIN stocks s ON p.stock_id = s.id
 WHERE p.user_id = $1
-ORDER BY p.purchased_at
 LIMIT 10
 OFFSET $2
 `
@@ -52,14 +47,12 @@ type GetPortfolioParams struct {
 }
 
 type GetPortfolioRow struct {
-	StockID       uuid.UUID `json:"stockId"`
-	PurchasePrice float32   `json:"purchasePrice"`
-	PurchasedAt   time.Time `json:"purchasedAt"`
-	Name          string    `json:"name"`
-	Symbol        string    `json:"symbol"`
-	Price         float32   `json:"price"`
-	IsCrypto      bool      `json:"isCrypto"`
-	IsStock       bool      `json:"isStock"`
+	StockID  uuid.UUID `json:"stockId"`
+	Name     string    `json:"name"`
+	Symbol   string    `json:"symbol"`
+	Price    float32   `json:"price"`
+	IsCrypto bool      `json:"isCrypto"`
+	IsStock  bool      `json:"isStock"`
 }
 
 func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]GetPortfolioRow, error) {
@@ -73,8 +66,6 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]G
 		var i GetPortfolioRow
 		if err := rows.Scan(
 			&i.StockID,
-			&i.PurchasePrice,
-			&i.PurchasedAt,
 			&i.Name,
 			&i.Symbol,
 			&i.Price,

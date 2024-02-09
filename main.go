@@ -6,6 +6,7 @@ import (
 
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
 	coursecodes "github.com/Boolean-Autocrat/stock-simulator-backend/api/courseCodes"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/ipo"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/leaderboard"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/market"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/middleware"
@@ -39,6 +40,7 @@ func main() {
 	leaderboardService := leaderboard.NewService(queries)
 	marketService := market.NewService(queries)
 	courseService := coursecodes.NewService(queries)
+	ipoService := ipo.NewService(queries)
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -58,6 +60,7 @@ func main() {
 	leaderboardService.RegisterHandlers(router)
 	marketService.RegisterHandlers(router)
 	courseService.RegisterHandlers(router)
+	ipoService.RegisterHandlers(router)
 	// p, err := kafka.NewProducer(&kafka.ConfigMap{
 	// 	"bootstrap.servers": "host1:9092",
 	// 	"client.id":         "stock-simulator-exchange",
