@@ -1,6 +1,7 @@
 package market
 
 import (
+	"log"
 	"net/http"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -32,6 +33,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 	userId, _ := c.Get("userID")
 	sellID, err := uuid.NewUUID()
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -45,6 +47,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 		StockID: req.Stock,
 	})
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusOK, gin.H{"message": "You do not own enough of this stock!"})
 		return
 	}
@@ -54,6 +57,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 	}
 	buyOrders, err := s.queries.ListBuyOrders(c, req.Stock)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -67,6 +71,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 			if buyOrder.Quantity-buyOrder.Fulfilled >= int32(req.Quantity) {
 				tradeID, err := uuid.NewUUID()
 				if err != nil {
+					log.Print(err.Error())
 					c.JSON(http.StatusInternalServerError, err)
 					return
 				}
@@ -99,6 +104,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 			if buyOrder.Quantity-buyOrder.Fulfilled < int32(req.Quantity) {
 				tradeID, err := uuid.NewUUID()
 				if err != nil {
+					log.Print(err.Error())
 					c.JSON(http.StatusInternalServerError, err)
 					return
 				}
@@ -142,11 +148,13 @@ func (s *Service) buyAsset(c *gin.Context) {
 	userId, _ := c.Get("userID")
 	userBalance, err := s.queries.GetUserBalance(c, userId.(uuid.UUID))
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 	buyID, err := uuid.NewUUID()
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -161,6 +169,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 	}
 	sellOrders, err := s.queries.ListSellOrders(c, req.Stock)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
@@ -178,6 +187,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 			if sellOrder.Quantity-sellOrder.Fulfilled >= int32(req.Quantity) {
 				tradeID, err := uuid.NewUUID()
 				if err != nil {
+					log.Print(err.Error())
 					c.JSON(http.StatusInternalServerError, err)
 					return
 				}
@@ -210,6 +220,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 			if sellOrder.Quantity-sellOrder.Fulfilled < int32(req.Quantity) {
 				tradeID, err := uuid.NewUUID()
 				if err != nil {
+					log.Print(err.Error())
 					c.JSON(http.StatusInternalServerError, err)
 					return
 				}
@@ -248,11 +259,13 @@ func (s *Service) GetOrderStats(c *gin.Context) {
 	userId, _ := c.Get("userID")
 	buyOrders, err := s.queries.GetAllBuyOrdersByUser(c, userId.(uuid.UUID))
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
 	sellOrders, err := s.queries.GetAllSellOrdersByUser(c, userId.(uuid.UUID))
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}

@@ -1,6 +1,7 @@
 package ipo
 
 import (
+	"log"
 	"net/http"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -29,11 +30,13 @@ func (s *Service) ipoBuy(c *gin.Context) {
 	userID := c.MustGet("userID").(uuid.UUID)
 	var req ipoBuyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	stock, err := s.queries.GetStockById(c, req.StockID)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -46,6 +49,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		ID:            req.StockID,
 	})
 	if buyErr != nil {
+		log.Print(buyErr.Error())
 		c.JSON(http.StatusBadRequest, buyErr.Error())
 		return
 	}
@@ -55,6 +59,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		Quantity: int32(req.Amount),
 	})
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}

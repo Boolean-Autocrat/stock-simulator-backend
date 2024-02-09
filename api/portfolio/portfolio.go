@@ -1,6 +1,7 @@
 package portfolio
 
 import (
+	"log"
 	"net/http"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -30,6 +31,7 @@ func (s *Service) GetPortfolio(c *gin.Context) {
 	}
 	portfolio, err := s.queries.GetPortfolio(c, params)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

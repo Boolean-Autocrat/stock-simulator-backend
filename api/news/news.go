@@ -2,6 +2,7 @@ package news
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -36,6 +37,7 @@ func (s *Service) getAllNews(c *gin.Context) {
 	}
 	news, err := s.queries.GetArticles(c)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -78,11 +80,13 @@ func (s *Service) getNews(c *gin.Context) {
 	newsIdStr := c.Param("id")
 	newsID, err := uuid.Parse(newsIdStr)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	newsItem, err := s.queries.GetArticle(c, newsID)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -113,6 +117,7 @@ func (s *Service) addNewsSentiment(c *gin.Context) {
 	newsIdStr := c.Param("id")
 	newsID, err := uuid.Parse(newsIdStr)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -128,6 +133,7 @@ func (s *Service) addNewsSentiment(c *gin.Context) {
 		Dislike:   typeStr == "dislike",
 	})
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

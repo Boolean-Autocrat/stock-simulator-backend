@@ -1,6 +1,7 @@
 package stocks
 
 import (
+	"log"
 	"net/http"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -36,11 +37,13 @@ func (s *Service) GetStock(c *gin.Context) {
 	idStr := c.Param("id")
 	stockID, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
 		return
 	}
 	stock, err := s.queries.GetStockById(c, stockID)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,6 +54,7 @@ func (s *Service) GetStock(c *gin.Context) {
 func (s *Service) GetStocks(c *gin.Context) {
 	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -60,6 +64,7 @@ func (s *Service) GetStocks(c *gin.Context) {
 func (s *Service) GetTrendingStocks(c *gin.Context) {
 	stocks, err := s.queries.GetTrendingStocks(c)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -71,6 +76,7 @@ func (s *Service) SearchStocks(c *gin.Context) {
 
 	stocks, err := s.queries.SearchStocks(c, query)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -82,12 +88,14 @@ func (s *Service) GetStockPriceHistory(c *gin.Context) {
 	idStr := c.Param("id")
 	stockID, err := uuid.Parse(idStr)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
 		return
 	}
 
 	priceHistory, err := s.queries.GetStockPriceHistory(c, stockID)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
