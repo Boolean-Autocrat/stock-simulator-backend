@@ -12,7 +12,7 @@ import (
 )
 
 const addOrUpdateStockToPortfolio = `-- name: AddOrUpdateStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (user_id, stock_id) DO UPDATE SET quantity = portfolio.quantity + $3 RETURNING id, user_id, stock_id, quantity
+INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (stock_id) DO UPDATE SET quantity = portfolio.quantity + $3 RETURNING id, user_id, stock_id, quantity
 `
 
 type AddOrUpdateStockToPortfolioParams struct {
