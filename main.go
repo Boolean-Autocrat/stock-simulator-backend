@@ -48,7 +48,7 @@ func main() {
 	router.Static("/assets", "./assets")
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "OK",
+			"message": "Health OK!",
 		})
 	})
 	router.Use(middleware.NewService(queries).TokenMiddleware())
