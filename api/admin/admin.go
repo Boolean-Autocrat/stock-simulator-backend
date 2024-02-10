@@ -13,6 +13,7 @@ import (
 func init() {
 	err := godotenv.Load()
 	if err != nil {
+		log.Print(err.Error())
 		log.Fatal("Error loading .env file")
 	}
 }
@@ -74,12 +75,14 @@ func (s *Service) adminLoginHandler(c *gin.Context) {
 func (s *Service) adminDashboard(c *gin.Context) {
 	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	news, err := s.queries.GetArticles(c)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -108,6 +111,7 @@ func (s *Service) addStock(c *gin.Context) {
 
 	stock, err := s.queries.CreateStock(c, params)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -136,6 +140,7 @@ func (s *Service) addNews(c *gin.Context) {
 
 	article, err := s.queries.AddArticle(c, params)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

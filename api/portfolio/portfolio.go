@@ -26,6 +26,7 @@ func (s *Service) GetPortfolio(c *gin.Context) {
 	var params db.GetPortfolioParams
 	params.UserID = userId.(uuid.UUID)
 	if err := c.ShouldBindJSON(&params); err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

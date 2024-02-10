@@ -11,18 +11,18 @@ import (
 	"github.com/google/uuid"
 )
 
-const addStockToPortfolio = `-- name: AddStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) RETURNING id, user_id, stock_id, quantity
+const addOrUpdateStockToPortfolio = `-- name: AddOrUpdateStockToPortfolio :one
+INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (user_id, stock_id) DO UPDATE SET quantity = portfolio.quantity + $3 RETURNING id, user_id, stock_id, quantity
 `
 
-type AddStockToPortfolioParams struct {
+type AddOrUpdateStockToPortfolioParams struct {
 	UserID   uuid.UUID `json:"userId"`
 	StockID  uuid.UUID `json:"stockId"`
 	Quantity int32     `json:"quantity"`
 }
 
-func (q *Queries) AddStockToPortfolio(ctx context.Context, arg AddStockToPortfolioParams) (Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, addStockToPortfolio, arg.UserID, arg.StockID, arg.Quantity)
+func (q *Queries) AddOrUpdateStockToPortfolio(ctx context.Context, arg AddOrUpdateStockToPortfolioParams) (Portfolio, error) {
+	row := q.db.QueryRowContext(ctx, addOrUpdateStockToPortfolio, arg.UserID, arg.StockID, arg.Quantity)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
@@ -150,5 +150,20 @@ type RemoveStockFromPortfolioParams struct {
 
 func (q *Queries) RemoveStockFromPortfolio(ctx context.Context, arg RemoveStockFromPortfolioParams) error {
 	_, err := q.db.ExecContext(ctx, removeStockFromPortfolio, arg.UserID, arg.StockID)
+	return err
+}
+
+const updateStockQuantityPortfolio = `-- name: UpdateStockQuantityPortfolio :exec
+UPDATE portfolio SET quantity = $3 WHERE user_id = $1 AND stock_id = $2
+`
+
+type UpdateStockQuantityPortfolioParams struct {
+	UserID   uuid.UUID `json:"userId"`
+	StockID  uuid.UUID `json:"stockId"`
+	Quantity int32     `json:"quantity"`
+}
+
+func (q *Queries) UpdateStockQuantityPortfolio(ctx context.Context, arg UpdateStockQuantityPortfolioParams) error {
+	_, err := q.db.ExecContext(ctx, updateStockQuantityPortfolio, arg.UserID, arg.StockID, arg.Quantity)
 	return err
 }

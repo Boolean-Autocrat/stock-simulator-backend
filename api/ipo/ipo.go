@@ -53,7 +53,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, buyErr.Error())
 		return
 	}
-	addPortfolio, err := s.queries.AddStockToPortfolio(c, db.AddStockToPortfolioParams{
+	addPortfolio, err := s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
 		StockID:  req.StockID,
 		UserID:   userID,
 		Quantity: int32(req.Amount),

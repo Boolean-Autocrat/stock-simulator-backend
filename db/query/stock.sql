@@ -1,3 +1,6 @@
+-- name: UpdateStockPrice :exec
+UPDATE stocks SET price = $1 WHERE id = $2;
+
 -- name: CreateStock :one
 INSERT INTO stocks (name, symbol, price, quantity, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
 

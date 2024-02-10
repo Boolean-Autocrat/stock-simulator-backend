@@ -3,6 +3,7 @@ package coursecodes
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
@@ -36,6 +37,7 @@ func (s *Service) courses(c *gin.Context) {
 	filename := "courseCodes.json"
 	data, err := os.Open(filename)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

@@ -98,6 +98,20 @@ func (s *Service) sellAsset(c *gin.Context) {
 					ID:      userId.(uuid.UUID),
 					Balance: req.Price * float32(req.Quantity),
 				})
+				s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
+					UserID:   userId.(uuid.UUID),
+					StockID:  req.Stock,
+					Quantity: -int32(req.Quantity),
+				})
+				s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
+					UserID:   userId.(uuid.UUID),
+					StockID:  req.Stock,
+					Quantity: int32(req.Quantity),
+				})
+				s.queries.UpdateStockPrice(c, db.UpdateStockPriceParams{
+					ID:    req.Stock,
+					Price: req.Price,
+				})
 				c.JSON(http.StatusOK, gin.H{"message": "Order successfully processed and matched!"})
 				return
 			}
@@ -122,6 +136,10 @@ func (s *Service) sellAsset(c *gin.Context) {
 				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 					ID:      userId.(uuid.UUID),
 					Balance: req.Price * float32(buyOrder.Quantity-buyOrder.Fulfilled),
+				})
+				s.queries.UpdateStockPrice(c, db.UpdateStockPriceParams{
+					ID:    req.Stock,
+					Price: req.Price,
 				})
 				req.Quantity -= int(buyOrder.Quantity - buyOrder.Fulfilled)
 				continue
@@ -214,6 +232,10 @@ func (s *Service) buyAsset(c *gin.Context) {
 					ID:      sellOrder.User,
 					Balance: req.Price * float32(req.Quantity),
 				})
+				s.queries.UpdateStockPrice(c, db.UpdateStockPriceParams{
+					ID:    req.Stock,
+					Price: req.Price,
+				})
 				c.JSON(http.StatusOK, gin.H{"message": "Order successfully processed and matched!"})
 				return
 			}
@@ -238,6 +260,10 @@ func (s *Service) buyAsset(c *gin.Context) {
 				s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 					ID:      sellOrder.User,
 					Balance: req.Price * float32(sellOrder.Quantity-sellOrder.Fulfilled),
+				})
+				s.queries.UpdateStockPrice(c, db.UpdateStockPriceParams{
+					ID:    req.Stock,
+					Price: req.Price,
 				})
 				req.Quantity -= int(sellOrder.Quantity - sellOrder.Fulfilled)
 				continue

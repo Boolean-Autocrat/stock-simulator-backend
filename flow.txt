@@ -1,0 +1,21 @@
+Buy Order:
+  - Order comes in, check on if user have enough money
+  - Look through existing sell orders to find an order either less than or equal to amount
+  - If less than amount found:
+	- fulfill buy order partially, fulfill sell order fully
+	- add to balance of seller
+	- subtract from balance of buyer
+	- add to portfolio of buyer
+	- subtract from portfolio of seller
+  - If equal to amount found:
+    - fulfill buy order fully, fulfill sell order fully
+    - add to balance of seller
+    - subtract from balance of buyer
+    - add to portfolio of buyer
+    - subtract from portfolio of seller
+  - If no amount found:
+    - add buy order to buy orders list
+  - If buy order is fulfilled:
+    - remove buy order from buy orders list
+  - If sell order is fulfilled:
+    - remove sell order from sell orders list

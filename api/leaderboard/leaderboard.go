@@ -1,6 +1,7 @@
 package leaderboard
 
 import (
+	"log"
 	"net/http"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -32,6 +33,7 @@ func (s *Service) getLeaderboard(c *gin.Context) {
 	userId, _ := c.Get("userID")
 	leaderboard, err := s.queries.GetLeaderboard(c)
 	if err != nil {
+		log.Print(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -55,6 +57,7 @@ func (s *Service) getLeaderboard(c *gin.Context) {
 	if !userFlag {
 		userPos, err := s.queries.GetUserPosition(c, userId.(uuid.UUID))
 		if err != nil {
+			log.Print(err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
