@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -9,7 +8,6 @@ import (
 )
 
 func CreateConsumer() *kafka.Consumer {
-	fmt.Println("Creating consumer")
 	config := &kafka.ConfigMap{
 		"bootstrap.servers": os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
 		"group.id":          os.Getenv("KAFKA_GROUP_ID"),
@@ -19,11 +17,15 @@ func CreateConsumer() *kafka.Consumer {
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = c.Subscribe("orders", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Consumer created, subscribed to orders")
 	return c
 }
 
 func CreateProducer() *kafka.Producer {
-	fmt.Println("Creating producer")
 	config := &kafka.ConfigMap{
 		"bootstrap.servers": os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
 	}

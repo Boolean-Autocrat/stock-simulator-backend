@@ -22,7 +22,13 @@ func (book *OrderBook) processLimitBuy(order Order) []Trade {
 			}
 			// fill the entire order
 			if sellOrder.Amount >= order.Amount {
-				trades = append(trades, Trade{order.ID, sellOrder.ID, order.Amount, sellOrder.Price})
+				trades = append(trades, Trade{
+					BuyerID:  order.UserID,
+					SellerID: sellOrder.UserID,
+					Amount:   order.Amount,
+					Price:    sellOrder.Price,
+					Stock:    order.Stock,
+				})
 				sellOrder.Amount -= order.Amount
 				if sellOrder.Amount == 0 {
 					book.removeSellOrder(i)
@@ -31,7 +37,13 @@ func (book *OrderBook) processLimitBuy(order Order) []Trade {
 			}
 			// fill a partial order and continue
 			if sellOrder.Amount < order.Amount {
-				trades = append(trades, Trade{order.ID, sellOrder.ID, sellOrder.Amount, sellOrder.Price})
+				trades = append(trades, Trade{
+					BuyerID:  order.UserID,
+					SellerID: sellOrder.UserID,
+					Amount:   sellOrder.Amount,
+					Price:    sellOrder.Price,
+					Stock:    order.Stock,
+				})
 				order.Amount -= sellOrder.Amount
 				book.removeSellOrder(i)
 				continue
@@ -57,7 +69,13 @@ func (book *OrderBook) processLimitSell(order Order) []Trade {
 			}
 			// fill the entire order
 			if buyOrder.Amount >= order.Amount {
-				trades = append(trades, Trade{order.ID, buyOrder.ID, order.Amount, buyOrder.Price})
+				trades = append(trades, Trade{
+					BuyerID:  buyOrder.UserID,
+					SellerID: order.UserID,
+					Amount:   order.Amount,
+					Price:    buyOrder.Price,
+					Stock:    order.Stock,
+				})
 				buyOrder.Amount -= order.Amount
 				if buyOrder.Amount == 0 {
 					book.removeBuyOrder(i)
@@ -66,7 +84,13 @@ func (book *OrderBook) processLimitSell(order Order) []Trade {
 			}
 			// fill a partial order and continue
 			if buyOrder.Amount < order.Amount {
-				trades = append(trades, Trade{order.ID, buyOrder.ID, buyOrder.Amount, buyOrder.Price})
+				trades = append(trades, Trade{
+					BuyerID:  buyOrder.UserID,
+					SellerID: order.UserID,
+					Amount:   buyOrder.Amount,
+					Price:    buyOrder.Price,
+					Stock:    order.Stock,
+				})
 				order.Amount -= buyOrder.Amount
 				book.removeBuyOrder(i)
 				continue

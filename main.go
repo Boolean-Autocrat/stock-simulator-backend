@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -27,6 +28,39 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	adminClient, _ := kafka.NewAdminClient(&kafka.ConfigMap{
+		"bootstrap.servers": os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
+	})
+	var topicsExist bool = false
+	topics, err := adminClient.GetMetadata(nil, true, 5000)
+	for _, topic := range topics.Topics {
+		if topic.Topic == "trades" || topic.Topic == "orders" {
+			topicsExist = true
+		}
+	}
+	if !topicsExist {
+		var mapTopics = []kafka.TopicSpecification{}
+		mapTopics = append(mapTopics, kafka.TopicSpecification{
+			Topic:             "trades",
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		})
+		mapTopics = append(mapTopics, kafka.TopicSpecification{
+			Topic:             "orders",
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		})
+		results, err := adminClient.CreateTopics(context.Background(), mapTopics)
+		if err != nil {
+			log.Println("Error creating topics:", err)
+		} else {
+			for _, result := range results {
+				fmt.Printf("Topic %s created: %v\n", result.Topic, result.Error)
+			}
+		}
+	}
+	adminClient.Close()
 }
 
 func main() {
@@ -50,7 +84,7 @@ func main() {
 	tradesTopic := "trades"
 
 	go func() {
-		fmt.Println("Starting trade processor")
+		log.Println("Starting trade processor")
 		for {
 			msg, err := consumer.ReadMessage(-1)
 			if err != nil {
@@ -60,13 +94,13 @@ func main() {
 
 			var order engine.Order
 			order.FromJSON(msg.Value)
-			book, exists := orderBooks[order.ID.String()]
+			book, exists := orderBooks[order.Stock.String()]
 			if !exists {
 				book = &engine.OrderBook{
 					BuyOrders:  make([]engine.Order, 0, 1000),
 					SellOrders: make([]engine.Order, 0, 1000),
 				}
-				orderBooks[order.ID.String()] = book
+				orderBooks[order.Stock.String()] = book
 			}
 
 			trades := book.Process(order)
@@ -92,7 +126,7 @@ func main() {
 	newsService := news.NewService(queries)
 	portfolioService := portfolio.NewService(queries)
 	leaderboardService := leaderboard.NewService(queries)
-	marketService := market.NewService(queries)
+	marketService := market.NewService(queries, producer)
 	courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
 
