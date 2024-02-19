@@ -1,80 +1,99 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS "users" (
-  "id" uuid DEFAULT uuid_generate_v4(),
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
   "full_name" varchar NOT NULL,
   "email" varchar UNIQUE NOT NULL,
   "picture" varchar NOT NULL,
-  "balance" decimal DEFAULT 10000.00 NOT NULL,
-  PRIMARY KEY ("id")
+  "balance" real NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "access_tokens" (
-  "id" uuid DEFAULT uuid_generate_v4(),
-  "user_id" uuid NOT NULL UNIQUE,
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+  "user" uuid NOT NULL,
   "token" varchar NOT NULL,
-  "expires_at" timestamptz NOT NULL,
-  PRIMARY KEY ("id"),
-  FOREIGN KEY ("user_id") REFERENCES "users" ("id")
-);
-
-CREATE TABLE IF NOT EXISTS "refresh_tokens" (
-  "id" uuid DEFAULT uuid_generate_v4(),
-  "user_id" uuid NOT NULL UNIQUE,
-  "token" varchar NOT NULL,
-  "expires_at" timestamptz NOT NULL,
-  PRIMARY KEY ("id"),
-  FOREIGN KEY ("user_id") REFERENCES "users" ("id")
+  "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE IF NOT EXISTS "stocks" (
-  "id" uuid DEFAULT uuid_generate_v4(),
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
   "name" varchar NOT NULL,
   "symbol" varchar NOT NULL,
-  "price" decimal NOT NULL,
-  "is_crypto" bool NOT NULL,
+  "price" real NOT NULL,
+  "ipo_quantity" int NOT NULL,
+  "in_circulation" int NOT NULL DEFAULT 0,
   "is_stock" bool NOT NULL,
-  "quantity" int NOT NULL,
-  PRIMARY KEY ("id")
-);
-
-CREATE TABLE IF NOT EXISTS "portfolio" (
-  "id" uuid DEFAULT uuid_generate_v4(),
-  "user_id" uuid NOT NULL,
-  "stock_id" uuid NOT NULL,
-  "purchase_price" decimal NOT NULL,
-  "purchased_at" timestamptz NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("id"),
-  FOREIGN KEY ("user_id") REFERENCES "users" ("id"),
-  FOREIGN KEY ("stock_id") REFERENCES "stocks" ("id")
+  "is_crypto" bool NOT NULL,
+  "trend" varchar NOT NULL DEFAULT 'unchanged',
+  "percentage_change" real NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS "price_history" (
-  "id" uuid DEFAULT uuid_generate_v4(),
-  "stock_id" uuid NOT NULL,
-  "price" decimal NOT NULL,
-  "price_at" timestamptz NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("id"),
-  FOREIGN KEY ("stock_id") REFERENCES "stocks" ("id")
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+  "stock" uuid NOT NULL,
+  "price" real NOT NULL,
+  "price_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE IF NOT EXISTS "portfolio" (
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+  "user" uuid NOT NULL,
+  "stock" uuid UNIQUE NOT NULL,
+  "quantity" int NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "trade_history" (
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+  "stock" uuid UNIQUE NOT NULL,
+  "quantity" int NOT NULL,
+  "buyer" uuid NOT NULL,
+  "seller" uuid NOT NULL,
+  "traded_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE IF NOT EXISTS "ipo_history" (
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+  "user" uuid NOT NULL,
+  "stock" uuid NOT NULL,
+  "quantity" int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS "news" (
-  "id" uuid DEFAULT uuid_generate_v4(),
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
   "title" varchar NOT NULL,
   "author" varchar NOT NULL,
-  "content" TEXT NOT NULL,
+  "content" text NOT NULL,
   "tag" varchar NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now()),
-  PRIMARY KEY ("id")
+  "image" varchar NOT NULL DEFAULT 'https://placehold.co/500x500',
+  "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE IF NOT EXISTS "news_sentiment" (
-  "id" uuid DEFAULT uuid_generate_v4(),
-  "article_id" uuid NOT NULL,
-  "user_id" uuid NOT NULL UNIQUE,
+  "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
+  "article" uuid NOT NULL,
+  "user" uuid NOT NULL,
   "like" bool NOT NULL,
-  "dislike" bool NOT NULL,
-  PRIMARY KEY ("id"),
-  FOREIGN KEY ("article_id") REFERENCES "news" ("id"),
-  FOREIGN KEY ("user_id") REFERENCES "users" ("id")
+  "dislike" bool NOT NULL
 );
+
+ALTER TABLE "access_tokens" ADD FOREIGN KEY ("user") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "price_history" ADD FOREIGN KEY ("stock") REFERENCES "stocks" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "portfolio" ADD FOREIGN KEY ("user") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "portfolio" ADD FOREIGN KEY ("stock") REFERENCES "stocks" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "trade_history" ADD FOREIGN KEY ("stock") REFERENCES "stocks" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "trade_history" ADD FOREIGN KEY ("buyer") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "trade_history" ADD FOREIGN KEY ("seller") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "ipo_history" ADD FOREIGN KEY ("user") REFERENCES "users" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "ipo_history" ADD FOREIGN KEY ("stock") REFERENCES "stocks" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "news_sentiment" ADD FOREIGN KEY ("article") REFERENCES "news" ("id") ON DELETE CASCADE;
+
+ALTER TABLE "news_sentiment" ADD FOREIGN KEY ("user") REFERENCES "users" ("id") ON DELETE CASCADE;

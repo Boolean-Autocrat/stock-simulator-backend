@@ -7,6 +7,7 @@ import (
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 )
 
@@ -47,6 +48,9 @@ func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/admin/dashboard", s.adminDashboard)
 	router.POST("/admin/stock", s.addStock)
 	router.POST("/admin/news", s.addNews)
+	router.GET("/admin/news/:id/delete", s.deleteNews)
+	router.GET("/admin/news/:id/edit", s.editNews)
+	router.POST("/admin/news/:id/edit", s.editNewsHandler)
 }
 
 func (s *Service) adminLogin(c *gin.Context) {
@@ -101,12 +105,12 @@ func (s *Service) addStock(c *gin.Context) {
 	}
 
 	params := db.CreateStockParams{
-		Name:     form.Name,
-		Symbol:   form.Symbol,
-		Quantity: form.Quantity,
-		Price:    form.Price,
-		IsCrypto: form.StockCrypto == "crypto",
-		IsStock:  form.StockCrypto == "stock",
+		Name:        form.Name,
+		Symbol:      form.Symbol,
+		IpoQuantity: form.Quantity,
+		Price:       form.Price,
+		IsCrypto:    form.StockCrypto == "crypto",
+		IsStock:     form.StockCrypto == "stock",
 	}
 
 	stock, err := s.queries.CreateStock(c, params)
@@ -116,8 +120,8 @@ func (s *Service) addStock(c *gin.Context) {
 		return
 	}
 	s.queries.CreatePriceHistory(c, db.CreatePriceHistoryParams{
-		StockID: stock.ID,
-		Price:   stock.Price,
+		Stock: stock.ID,
+		Price: stock.Price,
 	})
 	c.HTML(http.StatusOK, "stock_table.tmpl", gin.H{
 		"stock": stock,
@@ -147,4 +151,26 @@ func (s *Service) addNews(c *gin.Context) {
 	c.HTML(http.StatusOK, "article_table.tmpl", gin.H{
 		"article": article,
 	})
+}
+
+func (s *Service) deleteNews(c *gin.Context) {
+	articleID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	delArticleErr := s.queries.DeleteArticle(c, articleID)
+	if delArticleErr != nil {
+		log.Print(delArticleErr.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Redirect(302, "/admin/dashboard#news-table-body")
+}
+
+func (s *Service) editNews(c *gin.Context) {
+}
+
+func (s *Service) editNewsHandler(c *gin.Context) {
 }

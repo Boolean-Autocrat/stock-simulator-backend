@@ -6,3 +6,4 @@ credentials.json
 *.pem
 tmp
 node_modules
+*.txt

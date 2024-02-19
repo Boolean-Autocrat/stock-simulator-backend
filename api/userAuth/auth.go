@@ -96,10 +96,9 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 		return
 	}
 
-	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
-		UserID:    user.ID,
-		Token:     token.AccessToken,
-		ExpiresAt: token.Expiry,
+	err = s.queries.CreateOrUpdateAccessToken(c, db.CreateOrUpdateAccessTokenParams{
+		User:  user.ID,
+		Token: token.AccessToken,
 	})
 	if err != nil {
 		fmt.Print(err)
@@ -163,22 +162,15 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 		return
 	}
 
-	_, err = s.queries.CreateAccessToken(c, db.CreateAccessTokenParams{
-		UserID:    user.ID,
-		Token:     token.AccessToken,
-		ExpiresAt: token.Expiry.AddDate(0, 0, 365),
+	err = s.queries.CreateOrUpdateAccessToken(c, db.CreateOrUpdateAccessTokenParams{
+		User:  user.ID,
+		Token: token.AccessToken,
 	})
 	if err != nil {
 		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
 		return
 	}
-
-	_, err = s.queries.CreateRefreshToken(c, db.CreateRefreshTokenParams{
-		UserID:    user.ID,
-		Token:     token.RefreshToken,
-		ExpiresAt: token.Expiry,
-	})
 	if err != nil {
 		fmt.Print(err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token"})

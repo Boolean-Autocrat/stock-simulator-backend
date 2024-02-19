@@ -7,153 +7,40 @@ package db
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
 
-const createAccessToken = `-- name: CreateAccessToken :one
-INSERT INTO access_tokens (user_id, token, expires_at)
-VALUES ($1, $2, $3)
-ON CONFLICT (user_id) DO UPDATE
-SET token = excluded.token, expires_at = excluded.expires_at
-RETURNING id, user_id, token, expires_at
+const createOrUpdateAccessToken = `-- name: CreateOrUpdateAccessToken :exec
+INSERT INTO access_tokens ("user", token) VALUES ($1, $2) ON CONFLICT ("user") DO UPDATE SET token = $2
 `
 
-type CreateAccessTokenParams struct {
-	UserID    uuid.UUID `json:"userId"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expiresAt"`
+type CreateOrUpdateAccessTokenParams struct {
+	User  uuid.UUID `json:"user"`
+	Token string    `json:"token"`
 }
 
-func (q *Queries) CreateAccessToken(ctx context.Context, arg CreateAccessTokenParams) (AccessToken, error) {
-	row := q.db.QueryRowContext(ctx, createAccessToken, arg.UserID, arg.Token, arg.ExpiresAt)
-	var i AccessToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-	)
-	return i, err
-}
-
-const createRefreshToken = `-- name: CreateRefreshToken :one
-INSERT INTO refresh_tokens (user_id, token, expires_at)
-VALUES ($1, $2, $3)
-ON CONFLICT (user_id) DO UPDATE
-SET token = excluded.token, expires_at = excluded.expires_at
-RETURNING id, user_id, token, expires_at
-`
-
-type CreateRefreshTokenParams struct {
-	UserID    uuid.UUID `json:"userId"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expiresAt"`
-}
-
-func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {
-	row := q.db.QueryRowContext(ctx, createRefreshToken, arg.UserID, arg.Token, arg.ExpiresAt)
-	var i RefreshToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-	)
-	return i, err
+func (q *Queries) CreateOrUpdateAccessToken(ctx context.Context, arg CreateOrUpdateAccessTokenParams) error {
+	_, err := q.db.ExecContext(ctx, createOrUpdateAccessToken, arg.User, arg.Token)
+	return err
 }
 
 const deleteAccessToken = `-- name: DeleteAccessToken :exec
-DELETE FROM access_tokens WHERE user_id = $1
+DELETE FROM access_tokens WHERE "user" = $1
 `
 
-func (q *Queries) DeleteAccessToken(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteAccessToken, userID)
+func (q *Queries) DeleteAccessToken(ctx context.Context, user uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteAccessToken, user)
 	return err
-}
-
-const deleteRefreshToken = `-- name: DeleteRefreshToken :exec
-DELETE FROM refresh_tokens WHERE user_id = $1
-`
-
-func (q *Queries) DeleteRefreshToken(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteRefreshToken, userID)
-	return err
-}
-
-const getRefreshToken = `-- name: GetRefreshToken :one
-SELECT id, user_id, token, expires_at FROM refresh_tokens WHERE user_id = $1
-`
-
-func (q *Queries) GetRefreshToken(ctx context.Context, userID uuid.UUID) (RefreshToken, error) {
-	row := q.db.QueryRowContext(ctx, getRefreshToken, userID)
-	var i RefreshToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-	)
-	return i, err
 }
 
 const getTokenData = `-- name: GetTokenData :one
-SELECT user_id, expires_at FROM access_tokens WHERE token = $1
+SELECT "user" FROM access_tokens WHERE token = $1
 `
 
-type GetTokenDataRow struct {
-	UserID    uuid.UUID `json:"userId"`
-	ExpiresAt time.Time `json:"expiresAt"`
-}
-
-func (q *Queries) GetTokenData(ctx context.Context, token string) (GetTokenDataRow, error) {
+func (q *Queries) GetTokenData(ctx context.Context, token string) (uuid.UUID, error) {
 	row := q.db.QueryRowContext(ctx, getTokenData, token)
-	var i GetTokenDataRow
-	err := row.Scan(&i.UserID, &i.ExpiresAt)
-	return i, err
-}
-
-const updateAccessToken = `-- name: UpdateAccessToken :one
-UPDATE access_tokens SET expires_at = $1 AND token = $2 WHERE user_id = $3 RETURNING id, user_id, token, expires_at
-`
-
-type UpdateAccessTokenParams struct {
-	ExpiresAt time.Time `json:"expiresAt"`
-	Token     string    `json:"token"`
-	UserID    uuid.UUID `json:"userId"`
-}
-
-func (q *Queries) UpdateAccessToken(ctx context.Context, arg UpdateAccessTokenParams) (AccessToken, error) {
-	row := q.db.QueryRowContext(ctx, updateAccessToken, arg.ExpiresAt, arg.Token, arg.UserID)
-	var i AccessToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-	)
-	return i, err
-}
-
-const updateRefreshToken = `-- name: UpdateRefreshToken :one
-UPDATE refresh_tokens SET expires_at = $1 AND token = $2 WHERE user_id = $3 RETURNING id, user_id, token, expires_at
-`
-
-type UpdateRefreshTokenParams struct {
-	ExpiresAt time.Time `json:"expiresAt"`
-	Token     string    `json:"token"`
-	UserID    uuid.UUID `json:"userId"`
-}
-
-func (q *Queries) UpdateRefreshToken(ctx context.Context, arg UpdateRefreshTokenParams) (RefreshToken, error) {
-	row := q.db.QueryRowContext(ctx, updateRefreshToken, arg.ExpiresAt, arg.Token, arg.UserID)
-	var i RefreshToken
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Token,
-		&i.ExpiresAt,
-	)
-	return i, err
+	var user uuid.UUID
+	err := row.Scan(&user)
+	return user, err
 }

@@ -1,29 +1,5 @@
--- name: UpdateBalance :exec
-UPDATE users SET balance = balance + $1 WHERE id = $2;
+-- name: CreateTrade :exec
+INSERT INTO trade_history (stock, quantity, buyer, seller) VALUES ($1, $2, $3, $4);
 
--- name: AddSellOrder :exec
-INSERT INTO sell_orders ("id", "user", "stock", "price", "quantity", "fulfilled") VALUES ($1, $2, $3, $4, $5, $6);
-
--- name: UpdateSellOrder :exec
-UPDATE sell_orders SET "fulfilled" = "fulfilled" + $1 WHERE "id" = $2;
-
--- name: UpdateBuyOrder :exec
-UPDATE buy_orders SET "fulfilled" = "fulfilled" + $1 WHERE "id" = $2;
-
--- name: AddBuyOrder :exec
-INSERT INTO buy_orders ("id", "user", "stock", "price", "quantity", "fulfilled") VALUES ($1, $2, $3, $4, $5, $6);
-
--- name: AddTrade :exec
-INSERT INTO trades ("id", "buy_order", "sell_order", "price", "quantity") VALUES ($1, $2, $3, $4, $5);
-
--- name: GetAllSellOrdersByUser :many
-SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM sell_orders WHERE "user" = $1;
-
--- name: GetAllBuyOrdersByUser :many
-SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM buy_orders WHERE "user" = $1;
-
--- name: ListBuyOrders :many
-SELECT * FROM buy_orders WHERE "stock" = $1 AND "fulfilled" < "quantity" ORDER BY "price" DESC;
-
--- name: ListSellOrders :many
-SELECT * FROM sell_orders WHERE "stock" = $1 AND "fulfilled" < "quantity" ORDER BY "price" ASC;
+-- name: UpdateStockPrice :exec
+UPDATE stocks SET price = $1, trend = $2, percentage_change = $3 WHERE id = $4;

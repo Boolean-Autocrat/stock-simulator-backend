@@ -4,8 +4,6 @@ services:
     image: postgres:16-alpine3.19
     restart: always
     environment:
-      - PGTZ="GMT+5:30"
-      - TZ="GMT+5:30"
       - POSTGRES_HOST=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres

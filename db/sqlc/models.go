@@ -12,18 +12,16 @@ import (
 
 type AccessToken struct {
 	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"userId"`
+	User      uuid.UUID `json:"user"`
 	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expiresAt"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-type BuyOrder struct {
-	ID        uuid.UUID `json:"id"`
-	User      uuid.UUID `json:"user"`
-	Stock     uuid.UUID `json:"stock"`
-	Price     float32   `json:"price"`
-	Quantity  int32     `json:"quantity"`
-	Fulfilled int32     `json:"fulfilled"`
+type IpoHistory struct {
+	ID       uuid.UUID `json:"id"`
+	User     uuid.UUID `json:"user"`
+	Stock    uuid.UUID `json:"stock"`
+	Quantity int32     `json:"quantity"`
 }
 
 type News struct {
@@ -32,72 +30,52 @@ type News struct {
 	Author    string    `json:"author"`
 	Content   string    `json:"content"`
 	Tag       string    `json:"tag"`
+	Image     string    `json:"image"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
 type NewsSentiment struct {
-	ID        uuid.UUID `json:"id"`
-	ArticleID uuid.UUID `json:"articleId"`
-	UserID    uuid.UUID `json:"userId"`
-	Like      bool      `json:"like"`
-	Dislike   bool      `json:"dislike"`
+	ID      uuid.UUID `json:"id"`
+	Article uuid.UUID `json:"article"`
+	User    uuid.UUID `json:"user"`
+	Like    bool      `json:"like"`
+	Dislike bool      `json:"dislike"`
 }
 
 type Portfolio struct {
 	ID       uuid.UUID `json:"id"`
-	UserID   uuid.UUID `json:"userId"`
-	StockID  uuid.UUID `json:"stockId"`
+	User     uuid.UUID `json:"user"`
+	Stock    uuid.UUID `json:"stock"`
 	Quantity int32     `json:"quantity"`
-}
-
-type PortfolioPurchaseHistory struct {
-	PortfolioID   uuid.UUID `json:"portfolioId"`
-	PurchasePrice string    `json:"purchasePrice"`
-	PurchasedAt   time.Time `json:"purchasedAt"`
 }
 
 type PriceHistory struct {
 	ID      uuid.UUID `json:"id"`
-	StockID uuid.UUID `json:"stockId"`
+	Stock   uuid.UUID `json:"stock"`
 	Price   float32   `json:"price"`
 	PriceAt time.Time `json:"priceAt"`
 }
 
-type RefreshToken struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    uuid.UUID `json:"userId"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expiresAt"`
-}
-
-type SellOrder struct {
-	ID        uuid.UUID `json:"id"`
-	User      uuid.UUID `json:"user"`
-	Stock     uuid.UUID `json:"stock"`
-	Price     float32   `json:"price"`
-	Quantity  int32     `json:"quantity"`
-	Fulfilled int32     `json:"fulfilled"`
-}
-
 type Stock struct {
-	ID            uuid.UUID `json:"id"`
-	Name          string    `json:"name"`
-	Symbol        string    `json:"symbol"`
-	Price         float32   `json:"price"`
-	IsCrypto      bool      `json:"isCrypto"`
-	IsStock       bool      `json:"isStock"`
-	Quantity      int32     `json:"quantity"`
-	Trend         string    `json:"trend"`
-	PercentChange float32   `json:"percentChange"`
-	InCirculation int32     `json:"inCirculation"`
+	ID               uuid.UUID `json:"id"`
+	Name             string    `json:"name"`
+	Symbol           string    `json:"symbol"`
+	Price            float32   `json:"price"`
+	IpoQuantity      int32     `json:"ipoQuantity"`
+	InCirculation    int32     `json:"inCirculation"`
+	IsStock          bool      `json:"isStock"`
+	IsCrypto         bool      `json:"isCrypto"`
+	Trend            string    `json:"trend"`
+	PercentageChange float32   `json:"percentageChange"`
 }
 
-type Trade struct {
-	ID        uuid.UUID `json:"id"`
-	BuyOrder  uuid.UUID `json:"buyOrder"`
-	SellOrder uuid.UUID `json:"sellOrder"`
-	Price     float32   `json:"price"`
-	Quantity  int32     `json:"quantity"`
+type TradeHistory struct {
+	ID       uuid.UUID `json:"id"`
+	Stock    uuid.UUID `json:"stock"`
+	Quantity int32     `json:"quantity"`
+	Buyer    uuid.UUID `json:"buyer"`
+	Seller   uuid.UUID `json:"seller"`
+	TradedAt time.Time `json:"tradedAt"`
 }
 
 type User struct {

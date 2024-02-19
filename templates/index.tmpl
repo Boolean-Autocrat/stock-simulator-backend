@@ -10,6 +10,16 @@
 </head>
 
 <body class="m-2 dark:bg-gray-900">
+    <style>
+        .scrollable-td {
+            max-height: 15rem;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            display: block;
+            width: 20rem;
+            text-align: left;
+        }
+    </style>
     <div class=" flex justify-end m-2">
         <button id="theme-toggle" type="button"
             class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:focus:ring-gray-700 rounded-lg text-sm p-2.5">
@@ -40,13 +50,19 @@
                         Symbol
                     </th>
                     <th scope="col" class="px-6 py-3">
-                        Price
+                        IPO Price
                     </th>
                     <th scope="col" class="px-6 py-3">
-                        Quantity
+                        IPO Quantity
                     </th>
                     <th scope="col" class="px-6 py-3">
                         Type
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Trend
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Percentage Change
                     </th>
                 </tr>
             </thead>
@@ -65,7 +81,7 @@
                         {{ .Price }}
                     </td>
                     <td class="px-6 py-4">
-                        {{ .Quantity }}
+                        {{ .IpoQuantity }}
                     </td>
                     {{ if eq .IsStock true }}
                     <td class="px-6 py-4">
@@ -76,6 +92,12 @@
                         Crypto
                     </td>
                     {{ end }}
+                    <td class="px-6 py-4">
+                        {{ .Trend }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ .PercentageChange }}
+                    </td>
                 </tr>
                 {{ end }}
                 {{ end }}
@@ -83,19 +105,19 @@
         </table>
     </div>
     <div class="max-w-5xl mx-auto mt-4">
-        <button data-modal-target="article-modal" data-modal-toggle="article-modal"
+        <button data-modal-target="stock-modal" data-modal-toggle="stock-modal"
             class="block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             type="button">
             Add a Stock
         </button>
     </div>
-    <div id="article-modal" tabindex="-1"
+    <div id="stock-modal" tabindex="-1"
         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
         <div class="relative p-4 w-full max-w-4xl max-h-full">
             <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                <button type="button"
+                <button id="close-stocks-modal" type="button"
                     class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                    data-modal-hide="article-modal">
+                    data-modal-hide="stock-modal">
                     <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 14 14">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -106,8 +128,8 @@
                 <div class="p-4 md:p-5">
                     <div class="max-w-3xl mx-auto mt-4">
                         <h3 class="text-4xl mb-3 font-bold dark:text-white">Add a Stock</h3>
-                        <form hx-on::after-request="this.reset()" hx-post="/admin/stock" hx-target="#stock-table-body"
-                            hx-swap="beforeend">
+                        <form hx-on::after-request="this.reset();document.getElementById('close-stocks-modal').click();"
+                            hx-post="/admin/stock" hx-target="#stock-table-body" hx-swap="beforeend">
                             <div class="grid gap-6 mb-6 md:grid-cols-2">
                                 <div>
                                     <label for="stock_name"
@@ -126,14 +148,16 @@
                                 </div>
                                 <div>
                                     <label for="price"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Price</label>
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">IPO
+                                        Price</label>
                                     <input name="price" type="text" id="price"
                                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                         placeholder="INR" required>
                                 </div>
                                 <div>
                                     <label for="quantity"
-                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Quantity</label>
+                                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">IPO
+                                        Quantity</label>
                                     <input name="quantity" type="number" id="quantity"
                                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                         placeholder="100" required>
@@ -176,7 +200,13 @@
                         Tag
                     </th>
                     <th scope="col" class="px-6 py-3">
+                        Content
+                    </th>
+                    <th scope="col" class="px-6 py-3">
                         Created At
+                    </th>
+                    <th scope="col" class="px-6 py-3">
+                        Actions
                     </th>
                 </tr>
             </thead>
@@ -194,8 +224,28 @@
                     <td class="px-6 py-4">
                         {{ .Tag }}
                     </td>
+                    <td
+                        class="px-6 py-4 scrollable-td scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-700 dark:scrollbar-track-gray-800">
+                        {{ .Content }}
+                    </td>
                     <td class="px-6 py-4">
-                        {{ .CreatedAt.Format "Mon, 02 Jan 2006 15:04:05 UTC" }}
+                        {{ .CreatedAt.Format "Mon, 02 Jan 3:04 pm" }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <a href="/admin/news/{{ .ID }}/edit">
+                            <button
+                                class="m-1.5 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                type="button">
+                                Edit
+                            </button>
+                        </a>
+                        <a href="/admin/news/{{ .ID }}/delete">
+                            <button
+                                class="m-1.5 text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800"
+                                type="button">
+                                Delete
+                            </button>
+                        </a>
                     </td>
                 </tr>
                 {{ end }}
@@ -214,7 +264,7 @@
         class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
         <div class="relative p-4 w-full max-w-4xl max-h-full">
             <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-                <button type="button"
+                <button id="close-news-modal" type="button"
                     class="absolute top-3 end-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white"
                     data-modal-hide="news-modal">
                     <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -227,8 +277,8 @@
                 <div class="p-4 md:p-5">
                     <div class="max-w-3xl mx-auto mt-4">
                         <h3 class="text-4xl mb-3 font-bold dark:text-white">Add an Article</h3>
-                        <form hx-on::after-request="this.reset()" hx-post="/admin/news" hx-target="#news-table-body"
-                            hx-swap="beforeend">
+                        <form hx-on::after-request="this.reset();document.getElementById('close-news-modal').click();"
+                            hx-post="/admin/news" hx-target="#news-table-body" hx-swap="beforeend">
                             <div class="grid gap-6 mb-6 md:grid-cols-2">
                                 <div>
                                     <label for="title"
@@ -261,7 +311,7 @@
                                 class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 placeholder="Write your content here..."></textarea>
                             <button type="submit"
-                                class="mt-6 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
+                                class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Submit</button>
                         </form>
                     </div>
                 </div>

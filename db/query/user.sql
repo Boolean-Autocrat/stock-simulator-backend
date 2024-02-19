@@ -23,3 +23,6 @@ SELECT id, full_name, picture, balance, position FROM (
 
 -- name: GetUserBalance :one
 SELECT balance FROM users WHERE id = $1;
+
+-- name: UpdateBalance :exec
+UPDATE users SET balance = balance + $1 WHERE id = $2;

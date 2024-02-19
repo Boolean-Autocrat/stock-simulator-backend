@@ -40,8 +40,8 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if stock.Quantity-stock.InCirculation < int32(req.Amount) {
-		c.JSON(http.StatusBadRequest, "Not enough stock available")
+	if stock.IpoQuantity-stock.InCirculation < int32(req.Amount) {
+		c.JSON(400, gin.H{"message": "Not enough stocks in circulation"})
 		return
 	}
 	buyErr := s.queries.BuyStock(c, db.BuyStockParams{
@@ -54,8 +54,8 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		return
 	}
 	addPortfolio, err := s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
-		StockID:  req.StockID,
-		UserID:   userID,
+		Stock:    req.StockID,
+		User:     userID,
 		Quantity: int32(req.Amount),
 	})
 	if err != nil {

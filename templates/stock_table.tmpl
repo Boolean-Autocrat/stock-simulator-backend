@@ -10,7 +10,7 @@
         {{ .stock.Price }}
     </td>
     <td class="px-6 py-4">
-        {{ .stock.Quantity }}
+        {{ .stock.IpoQuantity }}
     </td>
     {{ if eq .stock.IsStock true }}
     <td class="px-6 py-4">
@@ -21,5 +21,11 @@
         Crypto
     </td>
     {{ end }}
+    <td class="px-6 py-4">
+        {{ .stock.Trend }}
+    </td>
+    <td class="px-6 py-4">
+        {{ .stock.PercentageChange }}
+    </td>
 </tr>
 {{ end }}

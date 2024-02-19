@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/stocks"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/userAuth"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/engine"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
@@ -31,7 +34,58 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	_, timezoneErr := postgres.DB.Exec("SET TIME ZONE 'Asia/Kolkata'")
+	if timezoneErr != nil {
+		log.Fatal(timezoneErr.Error())
+	}
+
 	queries := db.New(postgres.DB)
+
+	consumer := engine.CreateConsumer()
+	producer := engine.CreateProducer()
+
+	orderBooks := make(map[string]*engine.OrderBook)
+	done := make(chan bool)
+	tradesTopic := "trades"
+
+	go func() {
+		fmt.Println("Starting trade processor")
+		for {
+			msg, err := consumer.ReadMessage(-1)
+			if err != nil {
+				log.Printf("Error reading message: %v\n", err)
+				continue
+			}
+
+			var order engine.Order
+			order.FromJSON(msg.Value)
+			book, exists := orderBooks[order.ID.String()]
+			if !exists {
+				book = &engine.OrderBook{
+					BuyOrders:  make([]engine.Order, 0, 1000),
+					SellOrders: make([]engine.Order, 0, 1000),
+				}
+				orderBooks[order.ID.String()] = book
+			}
+
+			trades := book.Process(order)
+			for _, trade := range trades {
+				rawTrade := trade.ToJSON()
+				producer.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{
+						Topic:     &tradesTopic,
+						Partition: kafka.PartitionAny,
+					},
+					Value: rawTrade,
+				}, nil)
+			}
+
+			consumer.CommitMessage(msg)
+		}
+		done <- true
+	}()
+
 	adminService := admin.NewService(queries)
 	authService := userAuth.NewService(queries)
 	stockService := stocks.NewService(queries)
@@ -42,7 +96,7 @@ func main() {
 	courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
 
-	gin.SetMode(gin.ReleaseMode)
+	// gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/assets", "./assets")
@@ -61,49 +115,5 @@ func main() {
 	marketService.RegisterHandlers(router)
 	courseService.RegisterHandlers(router)
 	ipoService.RegisterHandlers(router)
-	// p, err := kafka.NewProducer(&kafka.ConfigMap{
-	// 	"bootstrap.servers": "host1:9092",
-	// 	"client.id":         "stock-simulator-exchange",
-	// 	"acks":              "all",
-	// })
-	// if err != nil {
-	// 	fmt.Printf("Failed to create producer: %s\n", err)
-	// 	os.Exit(1)
-	// }
-	// consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
-	// 	"bootstrap.servers": "host1:9092,host2:9092",
-	// 	"group.id":          "foo",
-	// 	"auto.offset.reset": "smallest"})
-	// if err != nil {
-	// 	fmt.Printf("Failed to create consumer: %s\n", err)
-	// 	os.Exit(1)
-	// }
-	// book := engine.OrderBook{
-	// 	BuyOrders:  make([]engine.Order, 0, 1000),
-	// 	SellOrders: make([]engine.Order, 0, 1000),
-	// }
-
-	// done := make(chan bool)
-	// tradesTopic := "trades"
-	// go func() {
-	// 	for {
-	// 		msg, _ := consumer.ReadMessage(-1)
-	// 		var order engine.Order
-	// 		order.FromJSON(msg.Value)
-	// 		trades := book.Process(order)
-	// 		for _, trade := range trades {
-	// 			rawTrade := trade.ToJSON()
-	// 			p.Produce(&kafka.Message{
-	// 				TopicPartition: kafka.TopicPartition{
-	// 					Topic: &tradesTopic,
-	// 					// Partition: kafka.PartitionAny, // TODO: Add partitioning by stock symbol
-	// 				},
-	// 				Value: rawTrade,
-	// 			}, nil)
-	// 		}
-	// 		consumer.CommitMessage(msg)
-	// 	}
-	// 	done <- true
-	// }()
 	router.Run()
 }

@@ -60,39 +60,7 @@ func (s *Service) TokenMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		c.Set("userID", tokenData.UserID)
+		c.Set("userID", tokenData)
 		c.Next()
-		// if tokenData.ExpiresAt.Before(time.Now()) {
-		// 	refreshToken, _ := s.queries.GetRefreshToken(c, tokenData.UserID)
-		// 	if refreshToken.ExpiresAt.Before(time.Now()) {
-		// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token expired"})
-		// 		c.Abort()
-		// 		return
-		// 	}
-		// 	refToken := &oauth2.Token{
-		// 		RefreshToken: refreshToken.Token,
-		// 	}
-		// 	newToken, err := refreshAccessToken(refToken)
-		// 	if err != nil {
-		// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to refresh access token"})
-		// 		c.Abort()
-		// 		return
-		// 	}
-		// 	params := db.UpdateAccessTokenParams{
-		// 		Token:     newToken.AccessToken,
-		// 		ExpiresAt: newToken.Expiry,
-		// 		UserID:    tokenData.UserID,
-		// 	}
-		// 	_, err = s.queries.UpdateAccessToken(c, params)
-		// 	if err != nil {
-		// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update access token"})
-		// 		c.Abort()
-		// 		return
-		// 	}
-		// 	c.Set("userID", tokenData.UserID)
-		// 	c.Header("Authorization", newToken.AccessToken)
-		// 	c.JSON(http.StatusOK, gin.H{"freshToken": "true"})
-		// } else {
-		// }
 	}
 }

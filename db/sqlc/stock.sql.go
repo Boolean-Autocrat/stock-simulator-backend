@@ -27,30 +27,30 @@ func (q *Queries) BuyStock(ctx context.Context, arg BuyStockParams) error {
 }
 
 const createPriceHistory = `-- name: CreatePriceHistory :exec
-INSERT INTO price_history (stock_id, price) VALUES ($1, $2)
+INSERT INTO price_history (stock, price) VALUES ($1, $2)
 `
 
 type CreatePriceHistoryParams struct {
-	StockID uuid.UUID `json:"stockId"`
-	Price   float32   `json:"price"`
+	Stock uuid.UUID `json:"stock"`
+	Price float32   `json:"price"`
 }
 
 func (q *Queries) CreatePriceHistory(ctx context.Context, arg CreatePriceHistoryParams) error {
-	_, err := q.db.ExecContext(ctx, createPriceHistory, arg.StockID, arg.Price)
+	_, err := q.db.ExecContext(ctx, createPriceHistory, arg.Stock, arg.Price)
 	return err
 }
 
 const createStock = `-- name: CreateStock :one
-INSERT INTO stocks (name, symbol, price, quantity, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change, in_circulation
+INSERT INTO stocks (name, symbol, price, ipo_quantity, is_crypto, is_stock) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, symbol, price, ipo_quantity, in_circulation, is_stock, is_crypto, trend, percentage_change
 `
 
 type CreateStockParams struct {
-	Name     string  `json:"name"`
-	Symbol   string  `json:"symbol"`
-	Price    float32 `json:"price"`
-	Quantity int32   `json:"quantity"`
-	IsCrypto bool    `json:"isCrypto"`
-	IsStock  bool    `json:"isStock"`
+	Name        string  `json:"name"`
+	Symbol      string  `json:"symbol"`
+	Price       float32 `json:"price"`
+	IpoQuantity int32   `json:"ipoQuantity"`
+	IsCrypto    bool    `json:"isCrypto"`
+	IsStock     bool    `json:"isStock"`
 }
 
 func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock, error) {
@@ -58,7 +58,7 @@ func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock
 		arg.Name,
 		arg.Symbol,
 		arg.Price,
-		arg.Quantity,
+		arg.IpoQuantity,
 		arg.IsCrypto,
 		arg.IsStock,
 	)
@@ -68,18 +68,18 @@ func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock
 		&i.Name,
 		&i.Symbol,
 		&i.Price,
-		&i.IsCrypto,
-		&i.IsStock,
-		&i.Quantity,
-		&i.Trend,
-		&i.PercentChange,
+		&i.IpoQuantity,
 		&i.InCirculation,
+		&i.IsStock,
+		&i.IsCrypto,
+		&i.Trend,
+		&i.PercentageChange,
 	)
 	return i, err
 }
 
 const getStock = `-- name: GetStock :one
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change, in_circulation FROM stocks WHERE name = $1 AND is_crypto = $2 AND is_stock = $3 AND symbol = $4 AND price = $5
+SELECT id, name, symbol, price, ipo_quantity, in_circulation, is_stock, is_crypto, trend, percentage_change FROM stocks WHERE name = $1 AND is_crypto = $2 AND is_stock = $3 AND symbol = $4 AND price = $5
 `
 
 type GetStockParams struct {
@@ -104,18 +104,18 @@ func (q *Queries) GetStock(ctx context.Context, arg GetStockParams) (Stock, erro
 		&i.Name,
 		&i.Symbol,
 		&i.Price,
-		&i.IsCrypto,
-		&i.IsStock,
-		&i.Quantity,
-		&i.Trend,
-		&i.PercentChange,
+		&i.IpoQuantity,
 		&i.InCirculation,
+		&i.IsStock,
+		&i.IsCrypto,
+		&i.Trend,
+		&i.PercentageChange,
 	)
 	return i, err
 }
 
 const getStockById = `-- name: GetStockById :one
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change, in_circulation FROM stocks WHERE id = $1
+SELECT id, name, symbol, price, ipo_quantity, in_circulation, is_stock, is_crypto, trend, percentage_change FROM stocks WHERE id = $1
 `
 
 func (q *Queries) GetStockById(ctx context.Context, id uuid.UUID) (Stock, error) {
@@ -126,18 +126,18 @@ func (q *Queries) GetStockById(ctx context.Context, id uuid.UUID) (Stock, error)
 		&i.Name,
 		&i.Symbol,
 		&i.Price,
-		&i.IsCrypto,
-		&i.IsStock,
-		&i.Quantity,
-		&i.Trend,
-		&i.PercentChange,
+		&i.IpoQuantity,
 		&i.InCirculation,
+		&i.IsStock,
+		&i.IsCrypto,
+		&i.Trend,
+		&i.PercentageChange,
 	)
 	return i, err
 }
 
 const getStockPriceHistory = `-- name: GetStockPriceHistory :many
-SELECT price, price_at FROM price_history WHERE stock_id = $1 ORDER BY price_at DESC
+SELECT price, price_at FROM price_history WHERE stock = $1 ORDER BY price_at DESC
 `
 
 type GetStockPriceHistoryRow struct {
@@ -145,8 +145,8 @@ type GetStockPriceHistoryRow struct {
 	PriceAt time.Time `json:"priceAt"`
 }
 
-func (q *Queries) GetStockPriceHistory(ctx context.Context, stockID uuid.UUID) ([]GetStockPriceHistoryRow, error) {
-	rows, err := q.db.QueryContext(ctx, getStockPriceHistory, stockID)
+func (q *Queries) GetStockPriceHistory(ctx context.Context, stock uuid.UUID) ([]GetStockPriceHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStockPriceHistory, stock)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (q *Queries) GetStockPriceHistory(ctx context.Context, stockID uuid.UUID) (
 }
 
 const getStocks = `-- name: GetStocks :many
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change, in_circulation FROM stocks
+SELECT id, name, symbol, price, ipo_quantity, in_circulation, is_stock, is_crypto, trend, percentage_change FROM stocks
 `
 
 func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
@@ -186,12 +186,12 @@ func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
 			&i.Name,
 			&i.Symbol,
 			&i.Price,
-			&i.IsCrypto,
-			&i.IsStock,
-			&i.Quantity,
-			&i.Trend,
-			&i.PercentChange,
+			&i.IpoQuantity,
 			&i.InCirculation,
+			&i.IsStock,
+			&i.IsCrypto,
+			&i.Trend,
+			&i.PercentageChange,
 		); err != nil {
 			return nil, err
 		}
@@ -207,7 +207,7 @@ func (q *Queries) GetStocks(ctx context.Context) ([]Stock, error) {
 }
 
 const getTrendingStocks = `-- name: GetTrendingStocks :many
-SELECT stocks.id, stocks.name, stocks.symbol, stocks.price, stocks.quantity, stocks.is_crypto, stocks.is_stock, COUNT(price_history.id) AS price_history_count FROM stocks LEFT JOIN price_history ON stocks.id = price_history.stock_id GROUP BY stocks.id ORDER BY price_history_count DESC, stocks.name ASC LIMIT 10
+SELECT stocks.id, stocks.name, stocks.symbol, stocks.price, stocks.ipo_quantity, stocks.is_crypto, stocks.is_stock, COUNT(price_history.id) AS price_history_count FROM stocks LEFT JOIN price_history ON stocks.id = price_history.stock GROUP BY stocks.id ORDER BY price_history_count DESC, stocks.name ASC LIMIT 10
 `
 
 type GetTrendingStocksRow struct {
@@ -215,7 +215,7 @@ type GetTrendingStocksRow struct {
 	Name              string    `json:"name"`
 	Symbol            string    `json:"symbol"`
 	Price             float32   `json:"price"`
-	Quantity          int32     `json:"quantity"`
+	IpoQuantity       int32     `json:"ipoQuantity"`
 	IsCrypto          bool      `json:"isCrypto"`
 	IsStock           bool      `json:"isStock"`
 	PriceHistoryCount int64     `json:"priceHistoryCount"`
@@ -235,7 +235,7 @@ func (q *Queries) GetTrendingStocks(ctx context.Context) ([]GetTrendingStocksRow
 			&i.Name,
 			&i.Symbol,
 			&i.Price,
-			&i.Quantity,
+			&i.IpoQuantity,
 			&i.IsCrypto,
 			&i.IsStock,
 			&i.PriceHistoryCount,
@@ -254,7 +254,7 @@ func (q *Queries) GetTrendingStocks(ctx context.Context) ([]GetTrendingStocksRow
 }
 
 const searchStocks = `-- name: SearchStocks :many
-SELECT id, name, symbol, price, is_crypto, is_stock, quantity, trend, percent_change, in_circulation FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
+SELECT id, name, symbol, price, ipo_quantity, in_circulation, is_stock, is_crypto, trend, percentage_change FROM stocks WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'
 `
 
 func (q *Queries) SearchStocks(ctx context.Context, lower string) ([]Stock, error) {
@@ -271,12 +271,12 @@ func (q *Queries) SearchStocks(ctx context.Context, lower string) ([]Stock, erro
 			&i.Name,
 			&i.Symbol,
 			&i.Price,
-			&i.IsCrypto,
-			&i.IsStock,
-			&i.Quantity,
-			&i.Trend,
-			&i.PercentChange,
+			&i.IpoQuantity,
 			&i.InCirculation,
+			&i.IsStock,
+			&i.IsCrypto,
+			&i.Trend,
+			&i.PercentageChange,
 		); err != nil {
 			return nil, err
 		}
@@ -289,18 +289,4 @@ func (q *Queries) SearchStocks(ctx context.Context, lower string) ([]Stock, erro
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateStockPrice = `-- name: UpdateStockPrice :exec
-UPDATE stocks SET price = $1 WHERE id = $2
-`
-
-type UpdateStockPriceParams struct {
-	Price float32   `json:"price"`
-	ID    uuid.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateStockPrice(ctx context.Context, arg UpdateStockPriceParams) error {
-	_, err := q.db.ExecContext(ctx, updateStockPrice, arg.Price, arg.ID)
-	return err
 }

@@ -156,3 +156,17 @@ func (q *Queries) GetUserPosition(ctx context.Context, id uuid.UUID) (GetUserPos
 	)
 	return i, err
 }
+
+const updateBalance = `-- name: UpdateBalance :exec
+UPDATE users SET balance = balance + $1 WHERE id = $2
+`
+
+type UpdateBalanceParams struct {
+	Balance float32   `json:"balance"`
+	ID      uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) error {
+	_, err := q.db.ExecContext(ctx, updateBalance, arg.Balance, arg.ID)
+	return err
+}

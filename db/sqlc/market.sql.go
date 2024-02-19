@@ -11,267 +11,44 @@ import (
 	"github.com/google/uuid"
 )
 
-const addBuyOrder = `-- name: AddBuyOrder :exec
-INSERT INTO buy_orders ("id", "user", "stock", "price", "quantity", "fulfilled") VALUES ($1, $2, $3, $4, $5, $6)
+const createTrade = `-- name: CreateTrade :exec
+INSERT INTO trade_history (stock, quantity, buyer, seller) VALUES ($1, $2, $3, $4)
 `
 
-type AddBuyOrderParams struct {
-	ID        uuid.UUID `json:"id"`
-	User      uuid.UUID `json:"user"`
-	Stock     uuid.UUID `json:"stock"`
-	Price     float32   `json:"price"`
-	Quantity  int32     `json:"quantity"`
-	Fulfilled int32     `json:"fulfilled"`
+type CreateTradeParams struct {
+	Stock    uuid.UUID `json:"stock"`
+	Quantity int32     `json:"quantity"`
+	Buyer    uuid.UUID `json:"buyer"`
+	Seller   uuid.UUID `json:"seller"`
 }
 
-func (q *Queries) AddBuyOrder(ctx context.Context, arg AddBuyOrderParams) error {
-	_, err := q.db.ExecContext(ctx, addBuyOrder,
-		arg.ID,
-		arg.User,
+func (q *Queries) CreateTrade(ctx context.Context, arg CreateTradeParams) error {
+	_, err := q.db.ExecContext(ctx, createTrade,
 		arg.Stock,
-		arg.Price,
 		arg.Quantity,
-		arg.Fulfilled,
+		arg.Buyer,
+		arg.Seller,
 	)
 	return err
 }
 
-const addSellOrder = `-- name: AddSellOrder :exec
-INSERT INTO sell_orders ("id", "user", "stock", "price", "quantity", "fulfilled") VALUES ($1, $2, $3, $4, $5, $6)
+const updateStockPrice = `-- name: UpdateStockPrice :exec
+UPDATE stocks SET price = $1, trend = $2, percentage_change = $3 WHERE id = $4
 `
 
-type AddSellOrderParams struct {
-	ID        uuid.UUID `json:"id"`
-	User      uuid.UUID `json:"user"`
-	Stock     uuid.UUID `json:"stock"`
-	Price     float32   `json:"price"`
-	Quantity  int32     `json:"quantity"`
-	Fulfilled int32     `json:"fulfilled"`
+type UpdateStockPriceParams struct {
+	Price            float32   `json:"price"`
+	Trend            string    `json:"trend"`
+	PercentageChange float32   `json:"percentageChange"`
+	ID               uuid.UUID `json:"id"`
 }
 
-func (q *Queries) AddSellOrder(ctx context.Context, arg AddSellOrderParams) error {
-	_, err := q.db.ExecContext(ctx, addSellOrder,
+func (q *Queries) UpdateStockPrice(ctx context.Context, arg UpdateStockPriceParams) error {
+	_, err := q.db.ExecContext(ctx, updateStockPrice,
+		arg.Price,
+		arg.Trend,
+		arg.PercentageChange,
 		arg.ID,
-		arg.User,
-		arg.Stock,
-		arg.Price,
-		arg.Quantity,
-		arg.Fulfilled,
 	)
-	return err
-}
-
-const addTrade = `-- name: AddTrade :exec
-INSERT INTO trades ("id", "buy_order", "sell_order", "price", "quantity") VALUES ($1, $2, $3, $4, $5)
-`
-
-type AddTradeParams struct {
-	ID        uuid.UUID `json:"id"`
-	BuyOrder  uuid.UUID `json:"buyOrder"`
-	SellOrder uuid.UUID `json:"sellOrder"`
-	Price     float32   `json:"price"`
-	Quantity  int32     `json:"quantity"`
-}
-
-func (q *Queries) AddTrade(ctx context.Context, arg AddTradeParams) error {
-	_, err := q.db.ExecContext(ctx, addTrade,
-		arg.ID,
-		arg.BuyOrder,
-		arg.SellOrder,
-		arg.Price,
-		arg.Quantity,
-	)
-	return err
-}
-
-const getAllBuyOrdersByUser = `-- name: GetAllBuyOrdersByUser :many
-SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM buy_orders WHERE "user" = $1
-`
-
-type GetAllBuyOrdersByUserRow struct {
-	Stock      uuid.UUID `json:"stock"`
-	Price      float32   `json:"price"`
-	Quantity   int32     `json:"quantity"`
-	Fulfilled  int32     `json:"fulfilled"`
-	IsComplete bool      `json:"isComplete"`
-}
-
-func (q *Queries) GetAllBuyOrdersByUser(ctx context.Context, user uuid.UUID) ([]GetAllBuyOrdersByUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllBuyOrdersByUser, user)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAllBuyOrdersByUserRow
-	for rows.Next() {
-		var i GetAllBuyOrdersByUserRow
-		if err := rows.Scan(
-			&i.Stock,
-			&i.Price,
-			&i.Quantity,
-			&i.Fulfilled,
-			&i.IsComplete,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getAllSellOrdersByUser = `-- name: GetAllSellOrdersByUser :many
-SELECT stock, price, quantity, fulfilled, fulfilled > quantity AS is_complete FROM sell_orders WHERE "user" = $1
-`
-
-type GetAllSellOrdersByUserRow struct {
-	Stock      uuid.UUID `json:"stock"`
-	Price      float32   `json:"price"`
-	Quantity   int32     `json:"quantity"`
-	Fulfilled  int32     `json:"fulfilled"`
-	IsComplete bool      `json:"isComplete"`
-}
-
-func (q *Queries) GetAllSellOrdersByUser(ctx context.Context, user uuid.UUID) ([]GetAllSellOrdersByUserRow, error) {
-	rows, err := q.db.QueryContext(ctx, getAllSellOrdersByUser, user)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetAllSellOrdersByUserRow
-	for rows.Next() {
-		var i GetAllSellOrdersByUserRow
-		if err := rows.Scan(
-			&i.Stock,
-			&i.Price,
-			&i.Quantity,
-			&i.Fulfilled,
-			&i.IsComplete,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listBuyOrders = `-- name: ListBuyOrders :many
-SELECT id, "user", stock, price, quantity, fulfilled FROM buy_orders WHERE "stock" = $1 AND "fulfilled" < "quantity" ORDER BY "price" DESC
-`
-
-func (q *Queries) ListBuyOrders(ctx context.Context, stock uuid.UUID) ([]BuyOrder, error) {
-	rows, err := q.db.QueryContext(ctx, listBuyOrders, stock)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []BuyOrder
-	for rows.Next() {
-		var i BuyOrder
-		if err := rows.Scan(
-			&i.ID,
-			&i.User,
-			&i.Stock,
-			&i.Price,
-			&i.Quantity,
-			&i.Fulfilled,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listSellOrders = `-- name: ListSellOrders :many
-SELECT id, "user", stock, price, quantity, fulfilled FROM sell_orders WHERE "stock" = $1 AND "fulfilled" < "quantity" ORDER BY "price" ASC
-`
-
-func (q *Queries) ListSellOrders(ctx context.Context, stock uuid.UUID) ([]SellOrder, error) {
-	rows, err := q.db.QueryContext(ctx, listSellOrders, stock)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []SellOrder
-	for rows.Next() {
-		var i SellOrder
-		if err := rows.Scan(
-			&i.ID,
-			&i.User,
-			&i.Stock,
-			&i.Price,
-			&i.Quantity,
-			&i.Fulfilled,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const updateBalance = `-- name: UpdateBalance :exec
-UPDATE users SET balance = balance + $1 WHERE id = $2
-`
-
-type UpdateBalanceParams struct {
-	Balance float32   `json:"balance"`
-	ID      uuid.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateBalance(ctx context.Context, arg UpdateBalanceParams) error {
-	_, err := q.db.ExecContext(ctx, updateBalance, arg.Balance, arg.ID)
-	return err
-}
-
-const updateBuyOrder = `-- name: UpdateBuyOrder :exec
-UPDATE buy_orders SET "fulfilled" = "fulfilled" + $1 WHERE "id" = $2
-`
-
-type UpdateBuyOrderParams struct {
-	Fulfilled int32     `json:"fulfilled"`
-	ID        uuid.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateBuyOrder(ctx context.Context, arg UpdateBuyOrderParams) error {
-	_, err := q.db.ExecContext(ctx, updateBuyOrder, arg.Fulfilled, arg.ID)
-	return err
-}
-
-const updateSellOrder = `-- name: UpdateSellOrder :exec
-UPDATE sell_orders SET "fulfilled" = "fulfilled" + $1 WHERE "id" = $2
-`
-
-type UpdateSellOrderParams struct {
-	Fulfilled int32     `json:"fulfilled"`
-	ID        uuid.UUID `json:"id"`
-}
-
-func (q *Queries) UpdateSellOrder(ctx context.Context, arg UpdateSellOrderParams) error {
-	_, err := q.db.ExecContext(ctx, updateSellOrder, arg.Fulfilled, arg.ID)
 	return err
 }

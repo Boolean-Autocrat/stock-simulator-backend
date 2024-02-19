@@ -92,8 +92,8 @@ func (s *Service) getNews(c *gin.Context) {
 	}
 	articleSentiment, _ := s.queries.GetArticleSentiment(c, newsID)
 	userSentiment, _ := s.queries.GetUserSentiment(c, db.GetUserSentimentParams{
-		UserID:    userId.(uuid.UUID),
-		ArticleID: newsID,
+		User:    userId.(uuid.UUID),
+		Article: newsID,
 	})
 	var userSentimentStr string
 	if userSentiment.Like {
@@ -127,10 +127,10 @@ func (s *Service) addNewsSentiment(c *gin.Context) {
 		return
 	}
 	err = s.queries.AddArticleSentiment(c, db.AddArticleSentimentParams{
-		UserID:    userId.(uuid.UUID),
-		ArticleID: newsID,
-		Like:      typeStr == "like",
-		Dislike:   typeStr == "dislike",
+		User:    userId.(uuid.UUID),
+		Article: newsID,
+		Like:    typeStr == "like",
+		Dislike: typeStr == "dislike",
 	})
 	if err != nil {
 		log.Print(err.Error())

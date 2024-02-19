@@ -12,52 +12,46 @@ import (
 )
 
 const addOrUpdateStockToPortfolio = `-- name: AddOrUpdateStockToPortfolio :one
-INSERT INTO portfolio (user_id, stock_id, quantity) VALUES ($1, $2, $3) ON CONFLICT (stock_id) DO UPDATE SET quantity = portfolio.quantity + $3 RETURNING id, user_id, stock_id, quantity
+INSERT INTO portfolio ("user", "stock", quantity) VALUES ($1, $2, $3) ON CONFLICT ("stock") DO UPDATE SET quantity = portfolio.quantity + $3 RETURNING id, "user", stock, quantity
 `
 
 type AddOrUpdateStockToPortfolioParams struct {
-	UserID   uuid.UUID `json:"userId"`
-	StockID  uuid.UUID `json:"stockId"`
+	User     uuid.UUID `json:"user"`
+	Stock    uuid.UUID `json:"stock"`
 	Quantity int32     `json:"quantity"`
 }
 
 func (q *Queries) AddOrUpdateStockToPortfolio(ctx context.Context, arg AddOrUpdateStockToPortfolioParams) (Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, addOrUpdateStockToPortfolio, arg.UserID, arg.StockID, arg.Quantity)
+	row := q.db.QueryRowContext(ctx, addOrUpdateStockToPortfolio, arg.User, arg.Stock, arg.Quantity)
 	var i Portfolio
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
-		&i.StockID,
+		&i.User,
+		&i.Stock,
 		&i.Quantity,
 	)
 	return i, err
 }
 
 const getPortfolio = `-- name: GetPortfolio :many
-SELECT p.stock_id, s.name, s.symbol, s.price, s.is_crypto, s.is_stock
+SELECT p."stock", s.name, s.symbol, s.price, s.is_crypto, s.is_stock, p.quantity 
 FROM portfolio p
-JOIN stocks s ON p.stock_id = s.id
-WHERE p.user_id = $1
-LIMIT 10
-OFFSET $2
+JOIN stocks s ON p."stock" = s.id
+WHERE p."user" = $1
 `
 
-type GetPortfolioParams struct {
-	UserID uuid.UUID `json:"userId"`
-	Offset int32     `json:"offset"`
-}
-
 type GetPortfolioRow struct {
-	StockID  uuid.UUID `json:"stockId"`
+	Stock    uuid.UUID `json:"stock"`
 	Name     string    `json:"name"`
 	Symbol   string    `json:"symbol"`
 	Price    float32   `json:"price"`
 	IsCrypto bool      `json:"isCrypto"`
 	IsStock  bool      `json:"isStock"`
+	Quantity int32     `json:"quantity"`
 }
 
-func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]GetPortfolioRow, error) {
-	rows, err := q.db.QueryContext(ctx, getPortfolio, arg.UserID, arg.Offset)
+func (q *Queries) GetPortfolio(ctx context.Context, user uuid.UUID) ([]GetPortfolioRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPortfolio, user)
 	if err != nil {
 		return nil, err
 	}
@@ -66,12 +60,13 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]G
 	for rows.Next() {
 		var i GetPortfolioRow
 		if err := rows.Scan(
-			&i.StockID,
+			&i.Stock,
 			&i.Name,
 			&i.Symbol,
 			&i.Price,
 			&i.IsCrypto,
 			&i.IsStock,
+			&i.Quantity,
 		); err != nil {
 			return nil, err
 		}
@@ -87,37 +82,37 @@ func (q *Queries) GetPortfolio(ctx context.Context, arg GetPortfolioParams) ([]G
 }
 
 const getStockWithQuantity = `-- name: GetStockWithQuantity :one
-SELECT SUM(quantity) AS quantity, stock_id FROM portfolio WHERE user_id = $1 AND stock_id = $2 GROUP BY stock_id
+SELECT SUM(quantity) AS quantity, "stock" FROM portfolio WHERE "user" = $1 AND "stock" = $2 GROUP BY "stock"
 `
 
 type GetStockWithQuantityParams struct {
-	UserID  uuid.UUID `json:"userId"`
-	StockID uuid.UUID `json:"stockId"`
+	User  uuid.UUID `json:"user"`
+	Stock uuid.UUID `json:"stock"`
 }
 
 type GetStockWithQuantityRow struct {
 	Quantity int64     `json:"quantity"`
-	StockID  uuid.UUID `json:"stockId"`
+	Stock    uuid.UUID `json:"stock"`
 }
 
 func (q *Queries) GetStockWithQuantity(ctx context.Context, arg GetStockWithQuantityParams) (GetStockWithQuantityRow, error) {
-	row := q.db.QueryRowContext(ctx, getStockWithQuantity, arg.UserID, arg.StockID)
+	row := q.db.QueryRowContext(ctx, getStockWithQuantity, arg.User, arg.Stock)
 	var i GetStockWithQuantityRow
-	err := row.Scan(&i.Quantity, &i.StockID)
+	err := row.Scan(&i.Quantity, &i.Stock)
 	return i, err
 }
 
 const getStocksAndQuantity = `-- name: GetStocksAndQuantity :many
-SELECT SUM(quantity) AS quantity, stock_id FROM portfolio WHERE user_id = $1 GROUP BY stock_id
+SELECT SUM(quantity) AS quantity, "stock" FROM portfolio WHERE "user" = $1 GROUP BY "stock"
 `
 
 type GetStocksAndQuantityRow struct {
 	Quantity int64     `json:"quantity"`
-	StockID  uuid.UUID `json:"stockId"`
+	Stock    uuid.UUID `json:"stock"`
 }
 
-func (q *Queries) GetStocksAndQuantity(ctx context.Context, userID uuid.UUID) ([]GetStocksAndQuantityRow, error) {
-	rows, err := q.db.QueryContext(ctx, getStocksAndQuantity, userID)
+func (q *Queries) GetStocksAndQuantity(ctx context.Context, user uuid.UUID) ([]GetStocksAndQuantityRow, error) {
+	rows, err := q.db.QueryContext(ctx, getStocksAndQuantity, user)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +120,7 @@ func (q *Queries) GetStocksAndQuantity(ctx context.Context, userID uuid.UUID) ([
 	var items []GetStocksAndQuantityRow
 	for rows.Next() {
 		var i GetStocksAndQuantityRow
-		if err := rows.Scan(&i.Quantity, &i.StockID); err != nil {
+		if err := rows.Scan(&i.Quantity, &i.Stock); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -137,33 +132,4 @@ func (q *Queries) GetStocksAndQuantity(ctx context.Context, userID uuid.UUID) ([
 		return nil, err
 	}
 	return items, nil
-}
-
-const removeStockFromPortfolio = `-- name: RemoveStockFromPortfolio :exec
-DELETE FROM portfolio WHERE user_id = $1 AND stock_id = $2
-`
-
-type RemoveStockFromPortfolioParams struct {
-	UserID  uuid.UUID `json:"userId"`
-	StockID uuid.UUID `json:"stockId"`
-}
-
-func (q *Queries) RemoveStockFromPortfolio(ctx context.Context, arg RemoveStockFromPortfolioParams) error {
-	_, err := q.db.ExecContext(ctx, removeStockFromPortfolio, arg.UserID, arg.StockID)
-	return err
-}
-
-const updateStockQuantityPortfolio = `-- name: UpdateStockQuantityPortfolio :exec
-UPDATE portfolio SET quantity = $3 WHERE user_id = $1 AND stock_id = $2
-`
-
-type UpdateStockQuantityPortfolioParams struct {
-	UserID   uuid.UUID `json:"userId"`
-	StockID  uuid.UUID `json:"stockId"`
-	Quantity int32     `json:"quantity"`
-}
-
-func (q *Queries) UpdateStockQuantityPortfolio(ctx context.Context, arg UpdateStockQuantityPortfolioParams) error {
-	_, err := q.db.ExecContext(ctx, updateStockQuantityPortfolio, arg.UserID, arg.StockID, arg.Quantity)
-	return err
 }
