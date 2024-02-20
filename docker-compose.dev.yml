@@ -1,26 +1,20 @@
 version: "3.9"
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+  rabbitmq:
+    image: "rabbitmq:3.12.13-alpine"
     ports:
-      - 22181:2181
-
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    depends_on:
-      - zookeeper
-    ports:
-      - 29092:29092
+      - "5672:5672"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      RABBITMQ_DEFAULT_USER: "admin"
+      RABBITMQ_DEFAULT_PASS: "admin"
+    volumes:
+      - ./rabbitmq-data:/var/lib/rabbitmq
+    restart: always
+    healthcheck:
+      test: "rabbitmqctl node_health_check"
+      interval: 30s
+      timeout: 30s
+      retries: 3
 
   postgres:
     image: postgres:16-alpine3.19
@@ -30,7 +24,22 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=sms_db
+      - POSTGRES_LOGGING_COLLECTOR=on
+      - POSTGRES_LOG_STATEMENT=all
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+      - ./postgres-log:/var/lib/postgresql/data/log
     ports:
       - "5432:5432"
+    command:
+      [
+        "postgres",
+        "-c",
+        "log_statement=all",
+        "-c",
+        "logging_collector=on",
+        "-c",
+        "log_directory=/var/lib/postgresql/data/log",
+        "-c",
+        "log_filename=postgresql.log",
+      ]

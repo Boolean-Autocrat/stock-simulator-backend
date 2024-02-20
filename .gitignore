@@ -2,6 +2,8 @@
 *.exe
 *.exe~
 postgres-data
+postgres-log
+rabbitmq-data
 credentials.json
 *.pem
 tmp

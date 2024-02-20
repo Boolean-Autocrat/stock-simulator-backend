@@ -6,18 +6,18 @@ import (
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/engine"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Service struct {
-	queries  *db.Queries
-	producer *kafka.Producer
+	queries   *db.Queries
+	channelMQ *amqp.Channel
 }
 
-func NewService(queries *db.Queries, producer *kafka.Producer) *Service {
-	return &Service{queries: queries, producer: producer}
+func NewService(queries *db.Queries, channelMQ *amqp.Channel) *Service {
+	return &Service{queries: queries, channelMQ: channelMQ}
 }
 
 func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
@@ -96,14 +96,22 @@ func (s *Service) sellAsset(c *gin.Context) {
 		Price:   order.Price,
 		Side:    0,
 	}
-	var tradesTopic = "orders"
-	s.producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &tradesTopic,
-			Partition: kafka.PartitionAny,
-		},
-		Value: parsedOrder.ToJSON(),
-	}, nil)
+	message := amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        parsedOrder.ToJSON(),
+	}
+	if err := s.channelMQ.PublishWithContext(
+		c,        // context
+		"",       // exchange
+		"orders", // queue name
+		false,    // mandatory
+		false,    // immediate
+		message,  // message to publish
+	); err != nil {
+		log.Println(err)
+		c.JSON(500, gin.H{"error": "Internal server error"})
+		return
+	}
 	c.JSON(200, gin.H{"message": "Order placed successfully"})
 }
 
@@ -154,14 +162,22 @@ func (s *Service) buyAsset(c *gin.Context) {
 		Price:   order.Price,
 		Side:    1,
 	}
-	var tradesTopic = "orders"
-	s.producer.Produce(&kafka.Message{
-		TopicPartition: kafka.TopicPartition{
-			Topic:     &tradesTopic,
-			Partition: kafka.PartitionAny,
-		},
-		Value: parsedOrder.ToJSON(),
-	}, nil)
+	message := amqp.Publishing{
+		ContentType: "text/plain",
+		Body:        parsedOrder.ToJSON(),
+	}
+	if err := s.channelMQ.PublishWithContext(
+		c,        // context
+		"",       // exchange
+		"orders", // queue name
+		false,    // mandatory
+		false,    // immediate
+		message,  // message to publish
+	); err != nil {
+		log.Println(err)
+		c.JSON(500, gin.H{"error": "Internal server error"})
+		return
+	}
 	c.JSON(200, gin.H{"message": "Order placed successfully"})
 }
 

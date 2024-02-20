@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"os"
 
@@ -19,9 +17,9 @@ import (
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/userAuth"
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/engine"
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func init() {
@@ -29,39 +27,6 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-
-	adminClient, _ := kafka.NewAdminClient(&kafka.ConfigMap{
-		"bootstrap.servers": os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
-	})
-	var topicsExist bool = false
-	topics, _ := adminClient.GetMetadata(nil, true, 5000)
-	for _, topic := range topics.Topics {
-		if topic.Topic == "trades" || topic.Topic == "orders" {
-			topicsExist = true
-		}
-	}
-	if !topicsExist {
-		var mapTopics = []kafka.TopicSpecification{}
-		mapTopics = append(mapTopics, kafka.TopicSpecification{
-			Topic:             "trades",
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-		})
-		mapTopics = append(mapTopics, kafka.TopicSpecification{
-			Topic:             "orders",
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-		})
-		results, err := adminClient.CreateTopics(context.Background(), mapTopics)
-		if err != nil {
-			log.Println("Error creating topics:", err)
-		} else {
-			for _, result := range results {
-				fmt.Printf("Topic %s created: %v\n", result.Topic, result.Error)
-			}
-		}
-	}
-	adminClient.Close()
 }
 
 func main() {
@@ -77,24 +42,50 @@ func main() {
 
 	queries := db.New(postgres.DB)
 
-	consumer := engine.CreateConsumer()
-	producer := engine.CreateProducer()
-
 	orderBooks := make(map[string]*engine.OrderBook)
-	done := make(chan bool)
-	tradesTopic := "trades"
+
+	amqpServerURL := os.Getenv("AMQP_SERVER_URL")
+	connectRabbitMQ, err := amqp.Dial(amqpServerURL)
+	if err != nil {
+		panic(err)
+	}
+	defer connectRabbitMQ.Close()
+	channelRabbitMQ, err := connectRabbitMQ.Channel()
+	if err != nil {
+		panic(err)
+	}
+	defer channelRabbitMQ.Close()
+	_, err = channelRabbitMQ.QueueDeclare(
+		"orders", // queue name
+		true,     // durable
+		false,    // auto delete
+		false,    // exclusive
+		false,    // no wait
+		nil,      // arguments
+	)
+	if err != nil {
+		panic(err)
+	}
+	messages, err := channelRabbitMQ.Consume(
+		"orders", // queue name
+		"",       // consumer
+		true,     // auto-ack
+		false,    // exclusive
+		false,    // no local
+		false,    // no wait
+		nil,      // arguments
+	)
+	if err != nil {
+		log.Println(err)
+	}
+
+	forever := make(chan bool)
 
 	go func() {
-		log.Println("Starting trade processor")
-		for {
-			msg, err := consumer.ReadMessage(-1)
-			if err != nil {
-				log.Printf("Error reading message: %v\n", err)
-				continue
-			}
-
+		defer close(forever)
+		for message := range messages {
 			var order engine.Order
-			order.FromJSON(msg.Value)
+			order.FromJSON(message.Body)
 			book, exists := orderBooks[order.Stock.String()]
 			if !exists {
 				book = &engine.OrderBook{
@@ -103,23 +94,11 @@ func main() {
 				}
 				orderBooks[order.Stock.String()] = book
 			}
-
 			trades := book.Process(order)
 			for _, trade := range trades {
 				engine.RunTradeQueries(trade, queries)
-				rawTrade := trade.ToJSON()
-				producer.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{
-						Topic:     &tradesTopic,
-						Partition: kafka.PartitionAny,
-					},
-					Value: rawTrade,
-				}, nil)
 			}
-
-			consumer.CommitMessage(msg)
 		}
-		done <- true
 	}()
 
 	adminService := admin.NewService(queries)
@@ -128,7 +107,7 @@ func main() {
 	newsService := news.NewService(queries)
 	portfolioService := portfolio.NewService(queries)
 	leaderboardService := leaderboard.NewService(queries)
-	marketService := market.NewService(queries, producer)
+	marketService := market.NewService(queries, channelRabbitMQ)
 	// courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
 

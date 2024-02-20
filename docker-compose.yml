@@ -1,22 +1,18 @@
 version: "3.9"
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
+  rabbitmq:
+    restart: always
+    image: "rabbitmq:3.12.13-alpine"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      RABBITMQ_DEFAULT_USER: "rabbitmq"
+      RABBITMQ_DEFAULT_PASS: "rabbitmq"
+    volumes:
+      - ./rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
 
   postgres:
     image: postgres:16-alpine3.19
@@ -26,13 +22,28 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=sms_db
+      - POSTGRES_LOGGING_COLLECTOR=on
+      - POSTGRES_LOG_STATEMENT=all
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
+      - ./postgres-log:/var/lib/postgresql/data/log
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: "pg_isready -U postgres"
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    command:
+      [
+        "postgres",
+        "-c",
+        "log_statement=all",
+        "-c",
+        "logging_collector=on",
+        "-c",
+        "log_directory=/var/lib/postgresql/data/log",
+        "-c",
+        "log_filename=postgresql.log",
+      ]
   api:
     restart: always
     build:
@@ -43,11 +54,12 @@ services:
     environment:
       - DB_SOURCE=postgresql://postgres:postgres@postgres:5432/sms_db?sslmode=disable
     depends_on:
+      - rabbitmq
       - postgres
-      - kafka
-      - zookeeper
     entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "/app/start.sh"]
     command: ["/app/main"]
 
 volumes:
-  postgres_data:
+  postgres-data:
+  postgres-log:
+  rabbitmq-data:
