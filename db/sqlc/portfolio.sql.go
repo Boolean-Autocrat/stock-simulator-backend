@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
-const addOrUpdateStockToPortfolio = `-- name: AddOrUpdateStockToPortfolio :one
-INSERT INTO portfolio ("user", "stock", quantity) VALUES ($1, $2, $3) ON CONFLICT ("stock") DO UPDATE SET quantity = portfolio.quantity + $3 RETURNING id, "user", stock, quantity
+const addOrUpdateStockToPortfolio = `-- name: AddOrUpdateStockToPortfolio :exec
+INSERT INTO portfolio ("user", "stock", quantity) VALUES ($1, $2, $3) ON CONFLICT ("stock") DO UPDATE SET quantity = portfolio.quantity + $3
 `
 
 type AddOrUpdateStockToPortfolioParams struct {
@@ -21,16 +21,9 @@ type AddOrUpdateStockToPortfolioParams struct {
 	Quantity int32     `json:"quantity"`
 }
 
-func (q *Queries) AddOrUpdateStockToPortfolio(ctx context.Context, arg AddOrUpdateStockToPortfolioParams) (Portfolio, error) {
-	row := q.db.QueryRowContext(ctx, addOrUpdateStockToPortfolio, arg.User, arg.Stock, arg.Quantity)
-	var i Portfolio
-	err := row.Scan(
-		&i.ID,
-		&i.User,
-		&i.Stock,
-		&i.Quantity,
-	)
-	return i, err
+func (q *Queries) AddOrUpdateStockToPortfolio(ctx context.Context, arg AddOrUpdateStockToPortfolioParams) error {
+	_, err := q.db.ExecContext(ctx, addOrUpdateStockToPortfolio, arg.User, arg.Stock, arg.Quantity)
+	return err
 }
 
 const getPortfolio = `-- name: GetPortfolio :many

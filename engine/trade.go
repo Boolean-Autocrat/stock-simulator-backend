@@ -7,11 +7,13 @@ import (
 )
 
 type Trade struct {
-	BuyerID  uuid.UUID `json:"buyer_id"`
-	SellerID uuid.UUID `json:"seller_id"`
-	Amount   uint64    `json:"amount"`
-	Price    float32   `json:"price"`
-	Stock    uuid.UUID `json:"stock"`
+	BuyerOrderID  uuid.UUID `json:"buyer_order_id"`
+	BuyerID       uuid.UUID `json:"buyer_id"`
+	SellerOrderID uuid.UUID `json:"seller_order_id"`
+	SellerID      uuid.UUID `json:"seller_id"`
+	Amount        int32     `json:"amount"`
+	Price         float32   `json:"price"`
+	Stock         uuid.UUID `json:"stock"`
 }
 
 func (trade *Trade) FromJSON(msg []byte) error {

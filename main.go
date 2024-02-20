@@ -33,7 +33,7 @@ func init() {
 		"bootstrap.servers": os.Getenv("KAFKA_BOOTSTRAP_SERVERS"),
 	})
 	var topicsExist bool = false
-	topics, err := adminClient.GetMetadata(nil, true, 5000)
+	topics, _ := adminClient.GetMetadata(nil, true, 5000)
 	for _, topic := range topics.Topics {
 		if topic.Topic == "trades" || topic.Topic == "orders" {
 			topicsExist = true
@@ -105,6 +105,7 @@ func main() {
 
 			trades := book.Process(order)
 			for _, trade := range trades {
+				engine.RunTradeQueries(trade, queries)
 				rawTrade := trade.ToJSON()
 				producer.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{

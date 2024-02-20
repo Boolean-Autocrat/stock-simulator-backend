@@ -7,11 +7,12 @@ import (
 )
 
 type Order struct {
-	Amount uint64    `json:"amount" binding:"required"`
-	Price  float32   `json:"price" binding:"required"`
-	UserID uuid.UUID `json:"id" binding:"required"`
-	Side   int8      `json:"side" binding:"required"`
-	Stock  uuid.UUID `json:"stock" binding:"required"`
+	OrderID uuid.UUID `json:"order_id"`
+	Amount  int32     `json:"amount" binding:"required"`
+	Price   float32   `json:"price" binding:"required"`
+	UserID  uuid.UUID `json:"user_id" binding:"required"`
+	Side    int8      `json:"side" binding:"required"`
+	Stock   uuid.UUID `json:"stock" binding:"required"`
 }
 
 func (order *Order) FromJSON(msg []byte) error {

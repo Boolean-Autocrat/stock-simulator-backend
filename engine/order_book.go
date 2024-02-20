@@ -1,16 +1,15 @@
 package engine
 
-// OrderBook type
 type OrderBook struct {
 	BuyOrders  []Order
 	SellOrders []Order
 }
 
-// Add a buy order to the order book
+// Add buy order to order book
 func (book *OrderBook) addBuyOrder(order Order) {
 	n := len(book.BuyOrders)
 	var i int
-	for i := n - 1; i >= 0; i-- {
+	for i = n - 1; i >= 0; i-- {
 		buyOrder := book.BuyOrders[i]
 		if buyOrder.Price < order.Price {
 			break
@@ -24,11 +23,11 @@ func (book *OrderBook) addBuyOrder(order Order) {
 	}
 }
 
-// Add a sell order to the order book
+// Add sell order to order book
 func (book *OrderBook) addSellOrder(order Order) {
 	n := len(book.SellOrders)
 	var i int
-	for i := n - 1; i >= 0; i-- {
+	for i = n - 1; i >= 0; i-- {
 		sellOrder := book.SellOrders[i]
 		if sellOrder.Price > order.Price {
 			break
@@ -42,12 +41,12 @@ func (book *OrderBook) addSellOrder(order Order) {
 	}
 }
 
-// Remove a buy order from the order book at a given index
+// Remove buy order at given index
 func (book *OrderBook) removeBuyOrder(index int) {
 	book.BuyOrders = append(book.BuyOrders[:index], book.BuyOrders[index+1:]...)
 }
 
-// Remove a sell order from the order book at a given index
+// Remove sell order at given index
 func (book *OrderBook) removeSellOrder(index int) {
 	book.SellOrders = append(book.SellOrders[:index], book.SellOrders[index+1:]...)
 }

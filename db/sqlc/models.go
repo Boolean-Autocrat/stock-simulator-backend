@@ -42,6 +42,17 @@ type NewsSentiment struct {
 	Dislike bool      `json:"dislike"`
 }
 
+type Order struct {
+	ID                uuid.UUID `json:"id"`
+	User              uuid.UUID `json:"user"`
+	Stock             uuid.UUID `json:"stock"`
+	Quantity          int32     `json:"quantity"`
+	FulfilledQuantity int32     `json:"fulfilledQuantity"`
+	Price             float32   `json:"price"`
+	IsBuy             bool      `json:"isBuy"`
+	CreatedAt         time.Time `json:"createdAt"`
+}
+
 type Portfolio struct {
 	ID       uuid.UUID `json:"id"`
 	User     uuid.UUID `json:"user"`
@@ -73,6 +84,7 @@ type TradeHistory struct {
 	ID       uuid.UUID `json:"id"`
 	Stock    uuid.UUID `json:"stock"`
 	Quantity int32     `json:"quantity"`
+	Price    float32   `json:"price"`
 	Buyer    uuid.UUID `json:"buyer"`
 	Seller   uuid.UUID `json:"seller"`
 	TradedAt time.Time `json:"tradedAt"`
@@ -84,4 +96,11 @@ type User struct {
 	Email    string    `json:"email"`
 	Picture  string    `json:"picture"`
 	Balance  float32   `json:"balance"`
+}
+
+type Watchlist struct {
+	ID      uuid.UUID `json:"id"`
+	User    uuid.UUID `json:"user"`
+	Stock   uuid.UUID `json:"stock"`
+	AddedAt time.Time `json:"addedAt"`
 }
