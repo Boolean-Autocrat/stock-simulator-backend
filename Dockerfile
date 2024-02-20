@@ -1,10 +1,12 @@
 # Build stage
 FROM golang:1.21-alpine3.19 AS builder
-RUN apk update && apk add gcc g++ libc-dev librdkafka-dev pkgconf
 WORKDIR /app
 COPY . .
 RUN go mod download
-RUN go build -tags musl -o main main.go
+
+ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
+RUN go build -ldflags="-s -w" -o main main.go
+
 RUN apk --no-cache add curl
 RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz
 
