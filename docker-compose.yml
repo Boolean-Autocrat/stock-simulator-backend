@@ -43,7 +43,7 @@ services:
     environment:
       - DB_SOURCE=postgresql://postgres:postgres@postgres:5432/sms_db?sslmode=disable
     depends_on:
-      - postgres
+      - postgres, kafka, zookeeper
     entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "/app/start.sh"]
     command: ["/app/main"]
 
