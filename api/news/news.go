@@ -19,7 +19,7 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/news", s.getAllNews)
 	router.GET("/news/:id", s.getNews)
 	router.POST("/news/:id/:type", s.addNewsSentiment)
@@ -38,7 +38,7 @@ func (s *Service) getAllNews(c *gin.Context) {
 	news, err := s.queries.GetArticles(c)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	var newsItems []NewsItem
@@ -81,13 +81,13 @@ func (s *Service) getNews(c *gin.Context) {
 	newsID, err := uuid.Parse(newsIdStr)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 	newsItem, err := s.queries.GetArticle(c, newsID)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	articleSentiment, _ := s.queries.GetArticleSentiment(c, newsID)
@@ -118,12 +118,12 @@ func (s *Service) addNewsSentiment(c *gin.Context) {
 	newsID, err := uuid.Parse(newsIdStr)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(400, gin.H{"error": "invalid request"})
 		return
 	}
 	typeStr := c.Param("type")
 	if typeStr != "like" && typeStr != "dislike" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid type parameter"})
+		c.JSON(400, gin.H{"error": "invalid type parameter"})
 		return
 	}
 	err = s.queries.AddArticleSentiment(c, db.AddArticleSentimentParams{
@@ -134,7 +134,7 @@ func (s *Service) addNewsSentiment(c *gin.Context) {
 	})
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	articleSentiment, _ := s.queries.GetArticleSentiment(c, newsID)

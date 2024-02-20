@@ -2,9 +2,7 @@ package middleware
 
 import (
 	"log"
-	"net/http"
 	"os"
-	"strings"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -26,37 +24,41 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
+func (s *Service) AdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.FullPath() == "/admin/login" {
+			c.Next()
+			return
+		}
+		cookie, err := c.Cookie("admin_auth")
+		if err != nil {
+			c.Redirect(302, "/admin/login")
+			return
+		}
+		if cookie != os.Getenv("ADMIN_SECRET") {
+			c.JSON(401, gin.H{"error": "Unauthorized"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 func (s *Service) TokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.FullPath() == "/admin/login" || c.FullPath() == "/courses" {
-			c.Next()
-			return
-		} else if strings.Contains(c.FullPath(), "/admin") {
-			cookie, err := c.Cookie("admin_auth")
-			if err != nil {
-				c.Redirect(http.StatusFound, "/admin/login")
-				return
-			}
-			if cookie != os.Getenv("ADMIN_SECRET") {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-				c.Abort()
-				return
-			}
-			c.Next()
-			return
-		} else if c.FullPath() == "/auth/google/login" || c.FullPath() == "/auth/google/callback" {
+		if c.FullPath() == "/courses" || c.FullPath() == "/auth/google/login" || c.FullPath() == "/auth/google/callback" {
 			c.Next()
 			return
 		}
 		accessToken := c.GetHeader("Authorization")
 		if accessToken == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "No access token provided"})
+			c.JSON(401, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}
 		tokenData, err := s.queries.GetTokenData(c, accessToken)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid access token"})
+			c.JSON(401, gin.H{"error": "Unauthorized"})
 			c.Abort()
 			return
 		}

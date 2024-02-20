@@ -3,11 +3,13 @@ package engine
 import (
 	"context"
 	"log"
+	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 )
 
 func RunTradeQueries(Trade Trade, queries *db.Queries) {
+	log.Println("Starting trade process at", time.Now())
 	tradeErr := queries.CreateTrade(context.Background(), db.CreateTradeParams{
 		Buyer:    Trade.BuyerID,
 		Seller:   Trade.SellerID,
@@ -102,5 +104,5 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 		log.Println(updateSellerOrderErr.Error())
 		panic(updateSellerOrderErr)
 	}
-	log.Println("Trade processed successfully!")
+	log.Println("Trade process completed at", time.Now())
 }

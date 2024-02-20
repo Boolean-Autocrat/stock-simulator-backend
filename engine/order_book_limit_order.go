@@ -1,6 +1,6 @@
 package engine
 
-// Process an order and return the trades generated before adding the remaining amount to the market
+// Process and return trades generated to market
 func (book *OrderBook) Process(order Order) []Trade {
 	if order.Side == 1 {
 		return book.processLimitBuy(order)

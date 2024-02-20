@@ -11,4 +11,8 @@ INSERT INTO orders ("user", stock, quantity, price, is_buy) VALUES ($1, $2, $3, 
 UPDATE orders SET fulfilled_quantity = fulfilled_quantity + $1 WHERE id = $2;
 
 -- name: GetPendingOrders :many
-SELECT stock, quantity, price, is_buy, fulfilled_quantity, "created_at" FROM orders WHERE "user" = $1;
+SELECT s.id AS stock_id, s.name AS stock, o.quantity, o.price, o.is_buy, o.fulfilled_quantity, o.created_at
+FROM orders o
+JOIN stocks s ON o.stock = s.id
+WHERE o.user = $1;
+

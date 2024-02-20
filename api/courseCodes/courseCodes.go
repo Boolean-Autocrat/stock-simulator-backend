@@ -19,7 +19,7 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/courses", s.courses)
 }
 

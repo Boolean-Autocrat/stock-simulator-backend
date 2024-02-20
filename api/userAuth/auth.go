@@ -3,7 +3,6 @@ package userAuth
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -54,7 +53,7 @@ type UserInfo struct {
 	EmailVerified bool   `json:"email_verified"`
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.POST("/auth/google/login", s.GoogleAuthUser)
 	router.GET("/auth/userinfo", s.GetUserInfo)
 }
@@ -76,7 +75,7 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 
 	userInfo, err := getGoogleUserInfo(token)
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
@@ -91,7 +90,7 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 		Picture:  userInfo.Picture,
 	})
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
@@ -101,7 +100,7 @@ func (s *Service) GoogleAuthUser(c *gin.Context) {
 		Token: token.AccessToken,
 	})
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
 		return
 	}
@@ -128,7 +127,7 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to exchange token"})
 		return
 	}
@@ -140,14 +139,14 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 
 	valid, err := verifyIDToken(idToken)
 	if err != nil || !valid {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid ID token"})
 		return
 	}
 
 	userInfo, err := getGoogleUserInfo(token)
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user info"})
 		return
 	}
@@ -157,7 +156,7 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 		Picture:  userInfo.Picture,
 	})
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
@@ -167,12 +166,12 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 		Token: token.AccessToken,
 	})
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
 		return
 	}
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token"})
 		return
 	}
@@ -204,7 +203,7 @@ func getGoogleUserInfo(token *oauth2.Token) (*UserInfo, error) {
 	client := googleOauthConfig.Client(context.Background(), token)
 	response, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		return nil, err
 	}
 	defer response.Body.Close()
@@ -212,7 +211,7 @@ func getGoogleUserInfo(token *oauth2.Token) (*UserInfo, error) {
 	var userInfo UserInfo
 	err = json.NewDecoder(response.Body).Decode(&userInfo)
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err.Error())
 		return nil, err
 	}
 

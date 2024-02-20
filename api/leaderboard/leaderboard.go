@@ -25,7 +25,7 @@ type LeaderboardItem struct {
 	IsYou    bool    `json:"isYou"`
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/leaderboard", s.getLeaderboard)
 }
 
@@ -34,7 +34,7 @@ func (s *Service) getLeaderboard(c *gin.Context) {
 	leaderboard, err := s.queries.GetLeaderboard(c)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 	counter := 0
@@ -58,7 +58,7 @@ func (s *Service) getLeaderboard(c *gin.Context) {
 		userPos, err := s.queries.GetUserPosition(c, userId.(uuid.UUID))
 		if err != nil {
 			log.Print(err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(500, gin.H{"error": "Internal server error."})
 			return
 		}
 		userItem := LeaderboardItem{

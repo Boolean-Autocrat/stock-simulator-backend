@@ -1,7 +1,6 @@
 package ipo
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -18,7 +17,7 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.POST("/ipo/buy", s.ipoBuy)
 }
 
@@ -32,13 +31,13 @@ func (s *Service) ipoBuy(c *gin.Context) {
 	var req ipoBuyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, err.Error())
+		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
 	stock, err := s.queries.GetStockById(c, req.StockID)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, err.Error())
+		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
 	if stock.IpoQuantity-stock.InCirculation < int32(req.Amount) {
@@ -56,7 +55,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 	})
 	if buyErr != nil {
 		log.Print(buyErr.Error())
-		c.JSON(http.StatusBadRequest, buyErr.Error())
+		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
 	addStockErr := s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
@@ -69,14 +68,13 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "Internal server error"})
 		return
 	}
-	fmt.Println(-(float32(req.Amount) * stock.Price))
 	balanceErr := s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 		ID:      userID,
 		Balance: -(float32(req.Amount) * stock.Price),
 	})
 	if balanceErr != nil {
 		log.Print(balanceErr.Error())
-		c.JSON(http.StatusBadRequest, balanceErr.Error())
+		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

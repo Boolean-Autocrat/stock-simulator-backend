@@ -61,11 +61,15 @@ func (q *Queries) CreateTrade(ctx context.Context, arg CreateTradeParams) error 
 }
 
 const getPendingOrders = `-- name: GetPendingOrders :many
-SELECT stock, quantity, price, is_buy, fulfilled_quantity, "created_at" FROM orders WHERE "user" = $1
+SELECT s.id AS stock_id, s.name AS stock, o.quantity, o.price, o.is_buy, o.fulfilled_quantity, o.created_at
+FROM orders o
+JOIN stocks s ON o.stock = s.id
+WHERE o.user = $1
 `
 
 type GetPendingOrdersRow struct {
-	Stock             uuid.UUID `json:"stock"`
+	StockID           uuid.UUID `json:"stockId"`
+	Stock             string    `json:"stock"`
 	Quantity          int32     `json:"quantity"`
 	Price             float32   `json:"price"`
 	IsBuy             bool      `json:"isBuy"`
@@ -83,6 +87,7 @@ func (q *Queries) GetPendingOrders(ctx context.Context, user uuid.UUID) ([]GetPe
 	for rows.Next() {
 		var i GetPendingOrdersRow
 		if err := rows.Scan(
+			&i.StockID,
 			&i.Stock,
 			&i.Quantity,
 			&i.Price,

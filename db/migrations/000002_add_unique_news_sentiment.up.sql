@@ -1,0 +1,1 @@
+ALTER TABLE "news_sentiment" ADD CONSTRAINT "unique_user_article" UNIQUE ("user", "article");

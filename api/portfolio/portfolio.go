@@ -17,7 +17,7 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/portfolio", s.GetPortfolio)
 }
 
@@ -26,7 +26,7 @@ func (s *Service) GetPortfolio(c *gin.Context) {
 	portfolio, err := s.queries.GetPortfolio(c, userId.(uuid.UUID))
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 	if portfolio == nil {

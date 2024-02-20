@@ -14,7 +14,7 @@ import (
 func init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Print(err.Error())
+		log.Println(err.Error())
 		log.Fatal("Error loading .env file")
 	}
 }
@@ -42,16 +42,16 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
-	router.GET("/admin/login", s.adminLogin)
-	router.POST("/admin/login", s.adminLoginHandler)
-	router.GET("/admin/logout", s.adminLogout)
-	router.GET("/admin/dashboard", s.adminDashboard)
-	router.POST("/admin/stock", s.addStock)
-	router.POST("/admin/news", s.addNews)
-	router.GET("/admin/news/:id/delete", s.deleteNews)
-	router.GET("/admin/news/:id/edit", s.editNews)
-	router.POST("/admin/news/:id/edit", s.editNewsHandler)
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
+	router.GET("/login", s.adminLogin)
+	router.POST("/login", s.adminLoginHandler)
+	router.GET("/logout", s.adminLogout)
+	router.GET("/dashboard", s.adminDashboard)
+	router.POST("/stock", s.addStock)
+	router.POST("/news", s.addNews)
+	router.GET("/news/:id/delete", s.deleteNews)
+	router.GET("/news/:id/edit", s.editNews)
+	router.POST("/news/:id/edit", s.editNewsHandler)
 }
 
 func (s *Service) adminLogin(c *gin.Context) {
@@ -65,11 +65,12 @@ func (s *Service) adminLoginHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid request"})
 		return
 	}
 	if os.Getenv("ADMIN_USERNAME") != form.Username || os.Getenv("ADMIN_PASSWORD") != form.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(401, gin.H{"error": "Invalid credentials"})
 		return
 	}
 	c.SetSameSite(http.SameSiteLaxMode)
@@ -86,15 +87,15 @@ func (s *Service) adminLogout(c *gin.Context) {
 func (s *Service) adminDashboard(c *gin.Context) {
 	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
-		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	news, err := s.queries.GetArticles(c)
 	if err != nil {
-		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -107,7 +108,8 @@ func (s *Service) adminDashboard(c *gin.Context) {
 func (s *Service) addStock(c *gin.Context) {
 	var form StockForm
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid request"})
 		return
 	}
 
@@ -122,8 +124,8 @@ func (s *Service) addStock(c *gin.Context) {
 
 	stock, err := s.queries.CreateStock(c, params)
 	if err != nil {
-		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	s.queries.CreatePriceHistory(c, db.CreatePriceHistoryParams{
@@ -138,7 +140,8 @@ func (s *Service) addStock(c *gin.Context) {
 func (s *Service) addNews(c *gin.Context) {
 	var form NewsForm
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid request"})
 		return
 	}
 
@@ -151,8 +154,8 @@ func (s *Service) addNews(c *gin.Context) {
 
 	article, err := s.queries.AddArticle(c, params)
 	if err != nil {
-		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	c.HTML(http.StatusOK, "article_table.tmpl", gin.H{
@@ -163,14 +166,14 @@ func (s *Service) addNews(c *gin.Context) {
 func (s *Service) deleteNews(c *gin.Context) {
 	articleID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid request"})
 		return
 	}
 	delArticleErr := s.queries.DeleteArticle(c, articleID)
 	if delArticleErr != nil {
-		log.Print(delArticleErr.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println(delArticleErr.Error())
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	c.Redirect(302, "/admin/dashboard#news-table-body")
@@ -179,13 +182,13 @@ func (s *Service) deleteNews(c *gin.Context) {
 func (s *Service) editNews(c *gin.Context) {
 	articleID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		log.Print(err.Error())
+		log.Println(err.Error())
 		c.JSON(400, gin.H{"message": "Invalid request"})
 		return
 	}
 	article, err := s.queries.GetArticle(c, articleID)
 	if err != nil {
-		log.Print(err.Error())
+		log.Println(err.Error())
 		c.JSON(400, gin.H{"message": "Invalid request"})
 		return
 	}
@@ -197,13 +200,14 @@ func (s *Service) editNews(c *gin.Context) {
 func (s *Service) editNewsHandler(c *gin.Context) {
 	articleID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		log.Print(err.Error())
+		log.Println(err.Error())
 		c.JSON(400, gin.H{"message": "Invalid request"})
 		return
 	}
 	var form NewsForm
 	if err := c.ShouldBind(&form); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		log.Println(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid request"})
 		return
 	}
 
@@ -216,8 +220,8 @@ func (s *Service) editNewsHandler(c *gin.Context) {
 	}
 	articleErr := s.queries.UpdateArticle(c, params)
 	if articleErr != nil {
-		log.Print(articleErr.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Println(articleErr.Error())
+		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
 	c.Redirect(302, "/admin/dashboard#news-table-body")

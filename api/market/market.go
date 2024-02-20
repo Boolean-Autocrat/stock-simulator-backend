@@ -20,7 +20,7 @@ func NewService(queries *db.Queries, producer *kafka.Producer) *Service {
 	return &Service{queries: queries, producer: producer}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.POST("/market/sell", s.sellAsset)
 	router.POST("/market/buy", s.buyAsset)
 	router.GET("/market/status", s.GetOrderStats)

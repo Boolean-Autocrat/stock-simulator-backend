@@ -17,7 +17,7 @@ func NewService(queries *db.Queries) *Service {
 	return &Service{queries: queries}
 }
 
-func (s *Service) RegisterHandlers(router *gin.Engine) {
+func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/stocks", s.GetStocks)
 	router.GET("/stocks/:id", s.GetStock)
 	router.GET("/stocks/trending", s.GetTrendingStocks)
@@ -38,13 +38,13 @@ func (s *Service) GetStock(c *gin.Context) {
 	stockID, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
+		c.JSON(400, gin.H{"error": "Invalid stock ID"})
 		return
 	}
 	stock, err := s.queries.GetStockById(c, stockID)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 
@@ -55,7 +55,7 @@ func (s *Service) GetStocks(c *gin.Context) {
 	stocks, err := s.queries.GetStocks(c)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 	c.JSON(http.StatusOK, stocks)
@@ -65,7 +65,7 @@ func (s *Service) GetTrendingStocks(c *gin.Context) {
 	stocks, err := s.queries.GetTrendingStocks(c)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 	c.JSON(http.StatusOK, stocks)
@@ -77,7 +77,7 @@ func (s *Service) SearchStocks(c *gin.Context) {
 	stocks, err := s.queries.SearchStocks(c, query)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 
@@ -89,14 +89,14 @@ func (s *Service) GetStockPriceHistory(c *gin.Context) {
 	stockID, err := uuid.Parse(idStr)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid stock ID"})
+		c.JSON(400, gin.H{"error": "Invalid stock ID"})
 		return
 	}
 
 	priceHistory, err := s.queries.GetStockPriceHistory(c, stockID)
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
 

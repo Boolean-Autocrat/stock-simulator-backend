@@ -19,7 +19,7 @@ SELECT * FROM news;
 -- name: AddArticleSentiment :exec
 INSERT INTO news_sentiment(article, "user", "like", "dislike")
 VALUES ($1, $2, $3, $4)
-ON CONFLICT ("user") DO UPDATE
+ON CONFLICT (article, "user") DO UPDATE
 SET "like" = excluded.like, "dislike" = excluded.dislike;
 
 -- name: DeleteArticle :exec
