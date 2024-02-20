@@ -108,7 +108,6 @@ func main() {
 	portfolioService := portfolio.NewService(queries)
 	leaderboardService := leaderboard.NewService(queries)
 	marketService := market.NewService(queries, channelRabbitMQ)
-	// courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
 
 	gin.SetMode(gin.ReleaseMode)
@@ -132,7 +131,6 @@ func main() {
 	portfolioService.RegisterHandlers(usersGroup)
 	leaderboardService.RegisterHandlers(usersGroup)
 	marketService.RegisterHandlers(usersGroup)
-	// courseService.RegisterHandlers(usersGroup)
 	ipoService.RegisterHandlers(usersGroup)
 
 	router.Run()
