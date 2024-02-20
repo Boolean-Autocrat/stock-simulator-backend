@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS "users" (
   "full_name" varchar NOT NULL,
   "email" varchar UNIQUE NOT NULL,
   "picture" varchar NOT NULL,
-  "balance" real NOT NULL DEFAULT 10000,
+  "balance" real NOT NULL DEFAULT 10000
 );
 
 CREATE TABLE IF NOT EXISTS "watchlist" (
