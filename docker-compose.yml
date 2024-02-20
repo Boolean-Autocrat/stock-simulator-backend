@@ -24,14 +24,6 @@ services:
       - POSTGRES_DB=sms_db
       - POSTGRES_LOGGING_COLLECTOR=on
       - POSTGRES_LOG_STATEMENT=all
-    volumes:
-      - ./psql-data:/var/lib/postgresql/data
-      - ./psql-log:/var/lib/postgresql/data/log
-    healthcheck:
-      test: "pg_isready -U postgres"
-      interval: 30s
-      timeout: 30s
-      retries: 3
     command:
       [
         "postgres",
@@ -40,10 +32,18 @@ services:
         "-c",
         "logging_collector=on",
         "-c",
-        "log_directory=/var/lib/postgresql/data/log",
+        "log_directory=/etc",
         "-c",
         "log_filename=postgresql.log",
       ]
+    volumes:
+      - ./psql-data:/var/lib/postgresql/data
+      - ./psql-log:/etc/postgresql.log
+    healthcheck:
+      test: "pg_isready -U postgres"
+      interval: 30s
+      timeout: 30s
+      retries: 3
   api:
     restart: always
     build:
