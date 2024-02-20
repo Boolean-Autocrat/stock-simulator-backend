@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS "orders" (
 
 CREATE TABLE IF NOT EXISTS "trade_history" (
   "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-  "stock" uuid UNIQUE NOT NULL,
+  "stock" uuid NOT NULL,
   "quantity" int NOT NULL,
   "price" real NOT NULL,
   "buyer" uuid NOT NULL,
@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS "ipo_history" (
   "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
   "user" uuid NOT NULL,
   "stock" uuid NOT NULL,
-  "quantity" int NOT NULL
+  "quantity" int NOT NULL,
+  "price" real NOT NULL,
+  "created_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE IF NOT EXISTS "news" (

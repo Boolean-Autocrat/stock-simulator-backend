@@ -12,6 +12,41 @@ import (
 	"github.com/google/uuid"
 )
 
+const addToIpoHistory = `-- name: AddToIpoHistory :exec
+INSERT INTO ipo_history ("user", stock, quantity, price) VALUES ($1, $2, $3, $4)
+`
+
+type AddToIpoHistoryParams struct {
+	User     uuid.UUID `json:"user"`
+	Stock    uuid.UUID `json:"stock"`
+	Quantity int32     `json:"quantity"`
+	Price    float32   `json:"price"`
+}
+
+func (q *Queries) AddToIpoHistory(ctx context.Context, arg AddToIpoHistoryParams) error {
+	_, err := q.db.ExecContext(ctx, addToIpoHistory,
+		arg.User,
+		arg.Stock,
+		arg.Quantity,
+		arg.Price,
+	)
+	return err
+}
+
+const addToWatchlist = `-- name: AddToWatchlist :exec
+INSERT INTO watchlist ("user", stock) VALUES ($1, $2)
+`
+
+type AddToWatchlistParams struct {
+	User  uuid.UUID `json:"user"`
+	Stock uuid.UUID `json:"stock"`
+}
+
+func (q *Queries) AddToWatchlist(ctx context.Context, arg AddToWatchlistParams) error {
+	_, err := q.db.ExecContext(ctx, addToWatchlist, arg.User, arg.Stock)
+	return err
+}
+
 const buyStock = `-- name: BuyStock :exec
 UPDATE stocks SET in_circulation = in_circulation + $1 WHERE id = $2
 `
@@ -76,6 +111,45 @@ func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (Stock
 		&i.PercentageChange,
 	)
 	return i, err
+}
+
+const getIpoHistory = `-- name: GetIpoHistory :many
+SELECT s.name, i.quantity, i.price, i.created_at FROM ipo_history i JOIN stocks s ON s.id = i.stock WHERE "user" = $1
+`
+
+type GetIpoHistoryRow struct {
+	Name      string    `json:"name"`
+	Quantity  int32     `json:"quantity"`
+	Price     float32   `json:"price"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (q *Queries) GetIpoHistory(ctx context.Context, user uuid.UUID) ([]GetIpoHistoryRow, error) {
+	rows, err := q.db.QueryContext(ctx, getIpoHistory, user)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetIpoHistoryRow
+	for rows.Next() {
+		var i GetIpoHistoryRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Quantity,
+			&i.Price,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getStock = `-- name: GetStock :one
@@ -239,6 +313,49 @@ func (q *Queries) GetTrendingStocks(ctx context.Context) ([]GetTrendingStocksRow
 			&i.IsCrypto,
 			&i.IsStock,
 			&i.PriceHistoryCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getWatchlist = `-- name: GetWatchlist :many
+SELECT stocks.name, stocks.symbol, stocks.price, stocks.is_crypto, stocks.is_stock, watchlist.added_at FROM stocks JOIN watchlist ON stocks.id = watchlist.stock WHERE watchlist."user" = $1
+`
+
+type GetWatchlistRow struct {
+	Name     string    `json:"name"`
+	Symbol   string    `json:"symbol"`
+	Price    float32   `json:"price"`
+	IsCrypto bool      `json:"isCrypto"`
+	IsStock  bool      `json:"isStock"`
+	AddedAt  time.Time `json:"addedAt"`
+}
+
+func (q *Queries) GetWatchlist(ctx context.Context, user uuid.UUID) ([]GetWatchlistRow, error) {
+	rows, err := q.db.QueryContext(ctx, getWatchlist, user)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetWatchlistRow
+	for rows.Next() {
+		var i GetWatchlistRow
+		if err := rows.Scan(
+			&i.Name,
+			&i.Symbol,
+			&i.Price,
+			&i.IsCrypto,
+			&i.IsStock,
+			&i.AddedAt,
 		); err != nil {
 			return nil, err
 		}

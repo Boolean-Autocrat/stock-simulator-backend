@@ -2,7 +2,6 @@ package stocks
 
 import (
 	"log"
-	"net/http"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -19,6 +18,8 @@ func NewService(queries *db.Queries) *Service {
 
 func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/stocks", s.GetStocks)
+	router.GET("/stocks/watchlist", s.GetWatchlist)
+	router.POST("/stocks/watchlist", s.AddToWatchlist)
 	router.GET("/stocks/:id", s.GetStock)
 	router.GET("/stocks/trending", s.GetTrendingStocks)
 	router.GET("/stocks/search", s.SearchStocks)
@@ -48,7 +49,7 @@ func (s *Service) GetStock(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, stock)
+	c.JSON(200, stock)
 }
 
 func (s *Service) GetStocks(c *gin.Context) {
@@ -58,7 +59,42 @@ func (s *Service) GetStocks(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
-	c.JSON(http.StatusOK, stocks)
+	c.JSON(200, stocks)
+}
+
+func (s *Service) GetWatchlist(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	watchlist, err := s.queries.GetWatchlist(c, userID.(uuid.UUID))
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(500, gin.H{"error": "Internal server error."})
+		return
+	}
+	c.JSON(200, gin.H{"watchlist": watchlist})
+}
+
+type AddToWatchlistRequest struct {
+	StockID uuid.UUID `json:"stock"`
+}
+
+func (s *Service) AddToWatchlist(c *gin.Context) {
+	userID, _ := c.Get("userID")
+	var stock AddToWatchlistRequest
+	if err := c.ShouldBindJSON(&stock); err != nil {
+		log.Print(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid request."})
+		return
+	}
+	err := s.queries.AddToWatchlist(c, db.AddToWatchlistParams{
+		User:  userID.(uuid.UUID),
+		Stock: stock.StockID,
+	})
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(500, gin.H{"error": "Internal server error."})
+		return
+	}
+	c.JSON(200, gin.H{"message": "Stock added to watchlist."})
 }
 
 func (s *Service) GetTrendingStocks(c *gin.Context) {
@@ -68,7 +104,7 @@ func (s *Service) GetTrendingStocks(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
-	c.JSON(http.StatusOK, stocks)
+	c.JSON(200, stocks)
 }
 
 func (s *Service) SearchStocks(c *gin.Context) {
@@ -81,7 +117,7 @@ func (s *Service) SearchStocks(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, stocks)
+	c.JSON(200, stocks)
 }
 
 func (s *Service) GetStockPriceHistory(c *gin.Context) {
@@ -100,5 +136,5 @@ func (s *Service) GetStockPriceHistory(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, priceHistory)
+	c.JSON(200, priceHistory)
 }

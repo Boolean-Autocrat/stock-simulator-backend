@@ -77,6 +77,17 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
+	addIpoHistoryErr := s.queries.AddToIpoHistory(c, db.AddToIpoHistoryParams{
+		Stock:    req.StockID,
+		User:     userID,
+		Quantity: int32(req.Amount),
+		Price:    stock.Price,
+	})
+	if addIpoHistoryErr != nil {
+		log.Print(addIpoHistoryErr.Error())
+		c.JSON(500, gin.H{"message": "Internal server error"})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Stock purchased successfully",
 	})

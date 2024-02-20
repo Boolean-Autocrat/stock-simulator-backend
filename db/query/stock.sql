@@ -24,3 +24,15 @@ SELECT stocks.id, stocks.name, stocks.symbol, stocks.price, stocks.ipo_quantity,
 
 -- name: BuyStock :exec
 UPDATE stocks SET in_circulation = in_circulation + $1 WHERE id = $2;
+
+-- name: AddToIpoHistory :exec
+INSERT INTO ipo_history ("user", stock, quantity, price) VALUES ($1, $2, $3, $4);
+
+-- name: GetIpoHistory :many
+SELECT s.name, i.quantity, i.price, i.created_at FROM ipo_history i JOIN stocks s ON s.id = i.stock WHERE "user" = $1;
+
+-- name: GetWatchlist :many
+SELECT stocks.name, stocks.symbol, stocks.price, stocks.is_crypto, stocks.is_stock, watchlist.added_at FROM stocks JOIN watchlist ON stocks.id = watchlist.stock WHERE watchlist."user" = $1;
+
+-- name: AddToWatchlist :exec
+INSERT INTO watchlist ("user", stock) VALUES ($1, $2);

@@ -18,10 +18,12 @@ type AccessToken struct {
 }
 
 type IpoHistory struct {
-	ID       uuid.UUID `json:"id"`
-	User     uuid.UUID `json:"user"`
-	Stock    uuid.UUID `json:"stock"`
-	Quantity int32     `json:"quantity"`
+	ID        uuid.UUID `json:"id"`
+	User      uuid.UUID `json:"user"`
+	Stock     uuid.UUID `json:"stock"`
+	Quantity  int32     `json:"quantity"`
+	Price     float32   `json:"price"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type News struct {

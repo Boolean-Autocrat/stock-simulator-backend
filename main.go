@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
-	coursecodes "github.com/Boolean-Autocrat/stock-simulator-backend/api/courseCodes"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/ipo"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/leaderboard"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/market"
@@ -128,10 +127,10 @@ func main() {
 	portfolioService := portfolio.NewService(queries)
 	leaderboardService := leaderboard.NewService(queries)
 	marketService := market.NewService(queries, producer)
-	courseService := coursecodes.NewService(queries)
+	// courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
 
-	// gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/assets", "./assets")
@@ -152,7 +151,7 @@ func main() {
 	portfolioService.RegisterHandlers(usersGroup)
 	leaderboardService.RegisterHandlers(usersGroup)
 	marketService.RegisterHandlers(usersGroup)
-	courseService.RegisterHandlers(usersGroup)
+	// courseService.RegisterHandlers(usersGroup)
 	ipoService.RegisterHandlers(usersGroup)
 
 	router.Run()

@@ -197,5 +197,11 @@ func (s *Service) GetOrderStats(c *gin.Context) {
 			"created_at": order.CreatedAt,
 		})
 	}
-	c.JSON(200, gin.H{"orders": pendingOrdersResponse})
+	ipoHistory, err := s.queries.GetIpoHistory(c, userID.(uuid.UUID))
+	if err != nil {
+		log.Println(err)
+		c.JSON(500, gin.H{"error": "Internal server error"})
+		return
+	}
+	c.JSON(200, gin.H{"orders": pendingOrdersResponse, "ipo": ipoHistory})
 }
