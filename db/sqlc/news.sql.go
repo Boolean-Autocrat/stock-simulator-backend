@@ -166,3 +166,26 @@ func (q *Queries) GetUserSentiment(ctx context.Context, arg GetUserSentimentPara
 	)
 	return i, err
 }
+
+const updateArticle = `-- name: UpdateArticle :exec
+UPDATE news SET title = $1, author = $2, content = $3, tag = $4 WHERE id = $5 RETURNING id, title, author, content, tag, image, created_at
+`
+
+type UpdateArticleParams struct {
+	Title   string    `json:"title"`
+	Author  string    `json:"author"`
+	Content string    `json:"content"`
+	Tag     string    `json:"tag"`
+	ID      uuid.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateArticle(ctx context.Context, arg UpdateArticleParams) error {
+	_, err := q.db.ExecContext(ctx, updateArticle,
+		arg.Title,
+		arg.Author,
+		arg.Content,
+		arg.Tag,
+		arg.ID,
+	)
+	return err
+}

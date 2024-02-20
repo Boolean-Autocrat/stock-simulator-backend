@@ -59,9 +59,14 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 	if stock.Price < Trade.Price {
 		stockTrend = "up"
 		stockPercentageChange = (Trade.Price - stock.Price) / stock.Price * 100
+		stockPercentageChange = float32(int(stockPercentageChange*100)) / 100
+	} else if stock.Price == Trade.Price {
+		stockTrend = "unchanged"
+		stockPercentageChange = 0
 	} else {
 		stockTrend = "down"
 		stockPercentageChange = (stock.Price - Trade.Price) / stock.Price * 100
+		stockPercentageChange = float32(int(stockPercentageChange*100)) / 100
 	}
 	updateStockPriceErr := queries.UpdateStockPrice(context.Background(), db.UpdateStockPriceParams{
 		ID:               Trade.Stock,

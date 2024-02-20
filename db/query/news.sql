@@ -1,6 +1,9 @@
 -- name: AddArticle :one
 INSERT INTO news (title, author, content, tag) VALUES ($1, $2, $3, $4) RETURNING *;
 
+-- name: UpdateArticle :exec
+UPDATE news SET title = $1, author = $2, content = $3, tag = $4 WHERE id = $5 RETURNING *;
+
 -- name: GetArticle :one
 SELECT * FROM news WHERE id = $1;
 

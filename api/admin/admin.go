@@ -45,6 +45,7 @@ func NewService(queries *db.Queries) *Service {
 func (s *Service) RegisterHandlers(router *gin.Engine) {
 	router.GET("/admin/login", s.adminLogin)
 	router.POST("/admin/login", s.adminLoginHandler)
+	router.GET("/admin/logout", s.adminLogout)
 	router.GET("/admin/dashboard", s.adminDashboard)
 	router.POST("/admin/stock", s.addStock)
 	router.POST("/admin/news", s.addNews)
@@ -74,6 +75,12 @@ func (s *Service) adminLoginHandler(c *gin.Context) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("admin_auth", os.Getenv("ADMIN_SECRET"), 3600*24*15, "", "", false, true)
 	c.Redirect(http.StatusFound, "/admin/dashboard")
+}
+
+func (s *Service) adminLogout(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("admin_auth", "", -1, "", "", false, true)
+	c.Redirect(http.StatusFound, "/admin/login")
 }
 
 func (s *Service) adminDashboard(c *gin.Context) {
@@ -170,7 +177,48 @@ func (s *Service) deleteNews(c *gin.Context) {
 }
 
 func (s *Service) editNews(c *gin.Context) {
+	articleID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(400, gin.H{"message": "Invalid request"})
+		return
+	}
+	article, err := s.queries.GetArticle(c, articleID)
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(400, gin.H{"message": "Invalid request"})
+		return
+	}
+	c.HTML(http.StatusOK, "article_edit.tmpl", gin.H{
+		"article": article,
+	})
 }
 
 func (s *Service) editNewsHandler(c *gin.Context) {
+	articleID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(400, gin.H{"message": "Invalid request"})
+		return
+	}
+	var form NewsForm
+	if err := c.ShouldBind(&form); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	params := db.UpdateArticleParams{
+		Title:   form.Title,
+		Author:  form.Author,
+		Content: form.Content,
+		Tag:     form.Tag,
+		ID:      articleID,
+	}
+	articleErr := s.queries.UpdateArticle(c, params)
+	if articleErr != nil {
+		log.Print(articleErr.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Redirect(302, "/admin/dashboard#news-table-body")
 }
