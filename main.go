@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	_ "time/tzdata"
+
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/ipo"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/leaderboard"
