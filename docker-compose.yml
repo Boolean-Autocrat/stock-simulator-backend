@@ -25,8 +25,8 @@ services:
       - POSTGRES_LOGGING_COLLECTOR=on
       - POSTGRES_LOG_STATEMENT=all
     volumes:
-      - ./postgres-data:/var/lib/postgresql/data
-      - ./postgres-log:/var/lib/postgresql/data/log
+      - ./psql-data:/var/lib/postgresql/data
+      - ./psql-log:/var/lib/postgresql/data/log
     healthcheck:
       test: "pg_isready -U postgres"
       interval: 30s
@@ -61,5 +61,5 @@ services:
 
 volumes:
   rabbitmq_data:
-  postgres_data:
-  postgres_log:
+  psql_data:
+  psql_log:
