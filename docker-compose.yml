@@ -60,6 +60,6 @@ services:
     command: ["/app/main"]
 
 volumes:
-  postgres-data:
-  postgres-log:
-  rabbitmq-data:
+  rabbitmq_data:
+  postgres_data:
+  postgres_log:
