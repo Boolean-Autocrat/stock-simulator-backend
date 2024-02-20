@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS "watchlist" (
 
 CREATE TABLE IF NOT EXISTS "access_tokens" (
   "id" uuid PRIMARY KEY DEFAULT (uuid_generate_v4()),
-  "user" uuid NOT NULL,
+  "user" uuid NOT NULL UNIQUE,
   "token" varchar NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now())
 );
