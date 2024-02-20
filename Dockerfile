@@ -2,7 +2,8 @@
 FROM golang:1.21-alpine3.19 AS builder
 WORKDIR /app
 COPY . .
-RUN go build -o main main.go
+RUN go mod download
+RUN go build -o main main.go -ldflags '-linkmode external -w -extldflags "-static"'
 RUN apk --no-cache add curl
 RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz
 
