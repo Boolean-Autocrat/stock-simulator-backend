@@ -22,23 +22,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=sms_db
-      - POSTGRES_LOGGING_COLLECTOR=on
-      - POSTGRES_LOG_STATEMENT=all
-    command:
-      [
-        "postgres",
-        "-c",
-        "log_statement=all",
-        "-c",
-        "logging_collector=on",
-        "-c",
-        "log_directory=/var/log/postgresql",
-        "-c",
-        "log_filename=postgresql.log",
-      ]
     volumes:
       - ./psql-data:/var/lib/postgresql/data
-      - ./psql-log:/var/log/postgresql
     healthcheck:
       test: "pg_isready -U postgres"
       interval: 30s
@@ -62,4 +47,3 @@ services:
 volumes:
   rabbitmq_data:
   psql_data:
-  psql_log:
