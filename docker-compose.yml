@@ -32,13 +32,13 @@ services:
         "-c",
         "logging_collector=on",
         "-c",
-        "log_directory=/etc",
+        "log_directory=/var/log/postgresql",
         "-c",
         "log_filename=postgresql.log",
       ]
     volumes:
       - ./psql-data:/var/lib/postgresql/data
-      - ./psql-log:/etc/postgresql.log
+      - ./psql-log:/var/log/postgresql
     healthcheck:
       test: "pg_isready -U postgres"
       interval: 30s
