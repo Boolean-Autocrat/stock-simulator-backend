@@ -58,6 +58,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
+	s.queries.BeginTransaction(c)
 	addStockErr := s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
 		Stock:    req.StockID,
 		User:     userID,
@@ -77,6 +78,7 @@ func (s *Service) ipoBuy(c *gin.Context) {
 		c.JSON(400, gin.H{"message": "Invalid request."})
 		return
 	}
+	s.queries.EndTransaction(c)
 	addIpoHistoryErr := s.queries.AddToIpoHistory(c, db.AddToIpoHistoryParams{
 		Stock:    req.StockID,
 		User:     userID,

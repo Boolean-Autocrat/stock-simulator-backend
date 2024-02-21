@@ -21,6 +21,7 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 		log.Println(tradeErr.Error())
 		panic(tradeErr)
 	}
+	queries.BeginTransaction(context.Background())
 	buyerBalanceErr := queries.UpdateBalance(context.Background(), db.UpdateBalanceParams{
 		ID:      Trade.BuyerID,
 		Balance: float32(-Trade.Amount) * Trade.Price,
@@ -28,15 +29,14 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 	if buyerBalanceErr != nil {
 		log.Println(buyerBalanceErr.Error())
 		panic(buyerBalanceErr)
-	} else {
-		sellerBalanceErr := queries.UpdateBalance(context.Background(), db.UpdateBalanceParams{
-			ID:      Trade.SellerID,
-			Balance: float32(Trade.Amount) * Trade.Price,
-		})
-		if sellerBalanceErr != nil {
-			log.Println(sellerBalanceErr.Error())
-			panic(sellerBalanceErr)
-		}
+	}
+	sellerBalanceErr := queries.UpdateBalance(context.Background(), db.UpdateBalanceParams{
+		ID:      Trade.SellerID,
+		Balance: float32(Trade.Amount) * Trade.Price,
+	})
+	if sellerBalanceErr != nil {
+		log.Println(sellerBalanceErr.Error())
+		panic(sellerBalanceErr)
 	}
 	buyerPortfolioErr := queries.AddOrUpdateStockToPortfolio(context.Background(), db.AddOrUpdateStockToPortfolioParams{
 		User:     Trade.BuyerID,
@@ -46,17 +46,17 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 	if buyerPortfolioErr != nil {
 		log.Println(buyerPortfolioErr.Error())
 		panic(buyerPortfolioErr)
-	} else {
-		sellerPortfolioErr := queries.AddOrUpdateStockToPortfolio(context.Background(), db.AddOrUpdateStockToPortfolioParams{
-			User:     Trade.SellerID,
-			Stock:    Trade.Stock,
-			Quantity: -Trade.Amount,
-		})
-		if sellerPortfolioErr != nil {
-			log.Println(sellerPortfolioErr.Error())
-			panic(sellerPortfolioErr)
-		}
 	}
+	sellerPortfolioErr := queries.AddOrUpdateStockToPortfolio(context.Background(), db.AddOrUpdateStockToPortfolioParams{
+		User:     Trade.SellerID,
+		Stock:    Trade.Stock,
+		Quantity: -Trade.Amount,
+	})
+	if sellerPortfolioErr != nil {
+		log.Println(sellerPortfolioErr.Error())
+		panic(sellerPortfolioErr)
+	}
+	queries.EndTransaction(context.Background())
 	stock, _ := queries.GetStockById(context.Background(), Trade.Stock)
 	var stockTrend string
 	var stockPercentageChange float32
@@ -72,6 +72,7 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 		stockPercentageChange = (stock.Price - Trade.Price) / stock.Price * 100
 		stockPercentageChange = float32(int(stockPercentageChange*100)) / 100
 	}
+	queries.BeginTransaction(context.Background())
 	updateStockPriceErr := queries.UpdateStockPrice(context.Background(), db.UpdateStockPriceParams{
 		ID:               Trade.Stock,
 		Price:            Trade.Price,
@@ -82,6 +83,7 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 		log.Println(updateStockPriceErr.Error())
 		panic(updateStockPriceErr)
 	}
+	queries.EndTransaction(context.Background())
 	priceHistoryErr := queries.CreatePriceHistory(context.Background(), db.CreatePriceHistoryParams{
 		Stock: Trade.Stock,
 		Price: Trade.Price,

@@ -66,6 +66,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "You don't have enough of this stock to sell."})
 		return
 	}
+	s.queries.BeginTransaction(c)
 	updatePortfolioErr := s.queries.AddOrUpdateStockToPortfolio(c, db.AddOrUpdateStockToPortfolioParams{
 		User:     userID.(uuid.UUID),
 		Stock:    order.Stock,
@@ -76,6 +77,7 @@ func (s *Service) sellAsset(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
+	s.queries.EndTransaction(c)
 	pendingOrder, err := s.queries.CreatePendingOrder(c, db.CreatePendingOrderParams{
 		User:     userID.(uuid.UUID),
 		Stock:    order.Stock,
@@ -133,6 +135,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Not enough balance to place this stock order."})
 		return
 	}
+	s.queries.BeginTransaction(c)
 	updateBalanceErr := s.queries.UpdateBalance(c, db.UpdateBalanceParams{
 		ID:      userID.(uuid.UUID),
 		Balance: -float32(order.Amount) * order.Price,
@@ -142,6 +145,7 @@ func (s *Service) buyAsset(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Internal server error"})
 		return
 	}
+	s.queries.EndTransaction(c)
 	pendingOrder, err := s.queries.CreatePendingOrder(c, db.CreatePendingOrderParams{
 		User:     userID.(uuid.UUID),
 		Stock:    order.Stock,
