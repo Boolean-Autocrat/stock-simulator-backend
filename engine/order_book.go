@@ -18,8 +18,12 @@ func (book *OrderBook) addBuyOrder(order Order) {
 	if i == n-1 {
 		book.BuyOrders = append(book.BuyOrders, order)
 	} else {
-		copy(book.BuyOrders[i+1:], book.BuyOrders[i:])
-		book.BuyOrders[i] = order
+		if i >= 0 {
+			copy(book.BuyOrders[i+1:], book.BuyOrders[i:])
+			book.BuyOrders[i] = order
+		} else {
+			book.BuyOrders = append([]Order{order}, book.BuyOrders...)
+		}
 	}
 }
 
@@ -36,8 +40,12 @@ func (book *OrderBook) addSellOrder(order Order) {
 	if i == n-1 {
 		book.SellOrders = append(book.SellOrders, order)
 	} else {
-		copy(book.SellOrders[i+1:], book.SellOrders[i:])
-		book.SellOrders[i] = order
+		if i >= 0 {
+			copy(book.SellOrders[i+1:], book.SellOrders[i:])
+			book.SellOrders[i] = order
+		} else {
+			book.SellOrders = append([]Order{order}, book.SellOrders...)
+		}
 	}
 }
 

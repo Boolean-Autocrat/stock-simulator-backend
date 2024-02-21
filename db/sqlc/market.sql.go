@@ -108,6 +108,42 @@ func (q *Queries) GetPendingOrders(ctx context.Context, user uuid.UUID) ([]GetPe
 	return items, nil
 }
 
+const getUnfulfilledOrders = `-- name: GetUnfulfilledOrders :many
+SELECT id, "user", stock, quantity, fulfilled_quantity, price, is_buy, created_at from orders WHERE fulfilled_quantity < quantity
+`
+
+func (q *Queries) GetUnfulfilledOrders(ctx context.Context) ([]Order, error) {
+	rows, err := q.db.QueryContext(ctx, getUnfulfilledOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Order
+	for rows.Next() {
+		var i Order
+		if err := rows.Scan(
+			&i.ID,
+			&i.User,
+			&i.Stock,
+			&i.Quantity,
+			&i.FulfilledQuantity,
+			&i.Price,
+			&i.IsBuy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updatePendingOrder = `-- name: UpdatePendingOrder :exec
 UPDATE orders SET fulfilled_quantity = fulfilled_quantity + $1 WHERE id = $2
 `

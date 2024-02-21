@@ -9,7 +9,7 @@ import (
 )
 
 func RunTradeQueries(Trade Trade, queries *db.Queries) {
-	log.Println("Starting trade process at", time.Now())
+	log.Println("Starting trade process at", time.Now().Format("2006-01-02 15:04:05"))
 	tradeErr := queries.CreateTrade(context.Background(), db.CreateTradeParams{
 		Buyer:    Trade.BuyerID,
 		Seller:   Trade.SellerID,
@@ -38,8 +38,6 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 			panic(sellerBalanceErr)
 		}
 	}
-	log.Println("Updated buyer and seller portfolio at")
-	log.Println(Trade.Amount)
 	buyerPortfolioErr := queries.AddOrUpdateStockToPortfolio(context.Background(), db.AddOrUpdateStockToPortfolioParams{
 		User:     Trade.BuyerID,
 		Stock:    Trade.Stock,
@@ -108,5 +106,5 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 		log.Println(updateSellerOrderErr.Error())
 		panic(updateSellerOrderErr)
 	}
-	log.Println("Trade process completed at", time.Now())
+	log.Println("Trade process completed at", time.Now().Format("2006-01-02 15:04:05"))
 }

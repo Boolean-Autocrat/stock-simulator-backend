@@ -16,3 +16,6 @@ FROM orders o
 JOIN stocks s ON o.stock = s.id
 WHERE o.user = $1;
 
+-- name: GetUnfulfilledOrders :many
+SELECT * from orders WHERE fulfilled_quantity < quantity;
+

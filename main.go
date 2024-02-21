@@ -86,6 +86,7 @@ func main() {
 		for message := range messages {
 			var order engine.Order
 			order.FromJSON(message.Body)
+			log.Printf("Received a message: %v", order)
 			book, exists := orderBooks[order.Stock.String()]
 			if !exists {
 				book = &engine.OrderBook{
@@ -100,6 +101,8 @@ func main() {
 			}
 		}
 	}()
+
+	engine.AddPendingOrders(queries, channelRabbitMQ)
 
 	adminService := admin.NewService(queries)
 	authService := userAuth.NewService(queries)
