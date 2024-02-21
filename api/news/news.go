@@ -106,8 +106,8 @@ func (s *Service) getNews(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"article": newsItem,
 		"sentiment": gin.H{
-			"article": articleSentiment,
-			"user":    userSentimentStr,
+			"overallSentiment": articleSentiment,
+			"userSentiment":    userSentimentStr,
 		},
 	})
 }
