@@ -1,5 +1,5 @@
 -- name: AddOrUpdateStockToPortfolio :exec
-INSERT INTO portfolio ("user", "stock", quantity) VALUES ($1, $2, $3) ON CONFLICT ("stock") DO UPDATE SET quantity = portfolio.quantity + $3;
+INSERT INTO portfolio ("user", "stock", quantity) VALUES ($1, $2, $3) ON CONFLICT ("user", "stock") DO UPDATE SET quantity = portfolio.quantity + $3;
 
 -- name: GetPortfolio :many
 SELECT p."stock", s.name, s.symbol, s.price, s.is_crypto, s.is_stock, p.quantity 
