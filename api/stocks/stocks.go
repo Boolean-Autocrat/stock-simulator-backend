@@ -91,7 +91,7 @@ func (s *Service) AddToWatchlist(c *gin.Context) {
 	})
 	if err != nil {
 		log.Print(err.Error())
-		c.JSON(400, gin.H{"error": "Stock already in watchlist."})
+		c.JSON(400, gin.H{"error": "Stock already in watchlist or invalid stock ID."})
 		return
 	}
 	c.JSON(200, gin.H{"message": "Stock added to watchlist."})

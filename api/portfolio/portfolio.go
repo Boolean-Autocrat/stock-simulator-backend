@@ -43,7 +43,11 @@ func (s *Service) GetPortfolio(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Internal server error."})
 		return
 	}
-	var returnPortfolio []ReturnPortfolio
+	returnPortfolio := make([]ReturnPortfolio, len(portfolio))
+	if len(portfolio) == 0 {
+		c.JSON(200, gin.H{"portfolio": returnPortfolio})
+		return
+	}
 	for i, stock := range portfolio {
 		returnPortfolio[i].Stock = stock.Stock
 		returnPortfolio[i].Name = stock.Name
@@ -59,7 +63,7 @@ func (s *Service) GetPortfolio(c *gin.Context) {
 			User:  userId.(uuid.UUID),
 		})
 		if err != nil {
-			if err != sql.ErrNoRows {
+			if err == sql.ErrNoRows {
 				returnPortfolio[i].Bookmarked = false
 			} else {
 				log.Print(err.Error())
