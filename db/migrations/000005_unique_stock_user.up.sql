@@ -1,0 +1,1 @@
+ALTER TABLE "watchlist" ADD CONSTRAINT "unique_stock_user" UNIQUE ("user", stock);

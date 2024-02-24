@@ -36,3 +36,6 @@ SELECT stocks.name, stocks.symbol, stocks.price, stocks.is_crypto, stocks.is_sto
 
 -- name: AddToWatchlist :exec
 INSERT INTO watchlist ("user", stock) VALUES ($1, $2);
+
+-- name: CheckWatchlist :one
+SELECT * FROM watchlist WHERE "user" = $1 AND stock = $2;

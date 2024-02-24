@@ -27,20 +27,22 @@ func (q *Queries) AddOrUpdateStockToPortfolio(ctx context.Context, arg AddOrUpda
 }
 
 const getPortfolio = `-- name: GetPortfolio :many
-SELECT p."stock", s.name, s.symbol, s.price, s.is_crypto, s.is_stock, p.quantity 
+SELECT p."stock", s.name, s.symbol, s.price, s.is_crypto, s.is_stock, s.trend, s.percentage_change, p.quantity 
 FROM portfolio p
 JOIN stocks s ON p."stock" = s.id
 WHERE p."user" = $1
 `
 
 type GetPortfolioRow struct {
-	Stock    uuid.UUID `json:"stock"`
-	Name     string    `json:"name"`
-	Symbol   string    `json:"symbol"`
-	Price    float32   `json:"price"`
-	IsCrypto bool      `json:"isCrypto"`
-	IsStock  bool      `json:"isStock"`
-	Quantity int32     `json:"quantity"`
+	Stock            uuid.UUID `json:"stock"`
+	Name             string    `json:"name"`
+	Symbol           string    `json:"symbol"`
+	Price            float32   `json:"price"`
+	IsCrypto         bool      `json:"isCrypto"`
+	IsStock          bool      `json:"isStock"`
+	Trend            string    `json:"trend"`
+	PercentageChange float32   `json:"percentageChange"`
+	Quantity         int32     `json:"quantity"`
 }
 
 func (q *Queries) GetPortfolio(ctx context.Context, user uuid.UUID) ([]GetPortfolioRow, error) {
@@ -59,6 +61,8 @@ func (q *Queries) GetPortfolio(ctx context.Context, user uuid.UUID) ([]GetPortfo
 			&i.Price,
 			&i.IsCrypto,
 			&i.IsStock,
+			&i.Trend,
+			&i.PercentageChange,
 			&i.Quantity,
 		); err != nil {
 			return nil, err

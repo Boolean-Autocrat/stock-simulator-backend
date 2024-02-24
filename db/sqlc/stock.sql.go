@@ -61,6 +61,27 @@ func (q *Queries) BuyStock(ctx context.Context, arg BuyStockParams) error {
 	return err
 }
 
+const checkWatchlist = `-- name: CheckWatchlist :one
+SELECT id, "user", stock, added_at FROM watchlist WHERE "user" = $1 AND stock = $2
+`
+
+type CheckWatchlistParams struct {
+	User  uuid.UUID `json:"user"`
+	Stock uuid.UUID `json:"stock"`
+}
+
+func (q *Queries) CheckWatchlist(ctx context.Context, arg CheckWatchlistParams) (Watchlist, error) {
+	row := q.db.QueryRowContext(ctx, checkWatchlist, arg.User, arg.Stock)
+	var i Watchlist
+	err := row.Scan(
+		&i.ID,
+		&i.User,
+		&i.Stock,
+		&i.AddedAt,
+	)
+	return i, err
+}
+
 const createPriceHistory = `-- name: CreatePriceHistory :exec
 INSERT INTO price_history (stock, price) VALUES ($1, $2)
 `
