@@ -40,6 +40,40 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getDevelopers = `-- name: GetDevelopers :many
+SELECT id, name, title, picture, email, github_link FROM developers ORDER BY id
+`
+
+func (q *Queries) GetDevelopers(ctx context.Context) ([]Developer, error) {
+	rows, err := q.db.QueryContext(ctx, getDevelopers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Developer
+	for rows.Next() {
+		var i Developer
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Title,
+			&i.Picture,
+			&i.Email,
+			&i.GithubLink,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getLeaderboard = `-- name: GetLeaderboard :many
 SELECT id, full_name, picture, balance FROM users ORDER BY balance DESC, full_name ASC LIMIT 10
 `

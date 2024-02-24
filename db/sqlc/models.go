@@ -17,6 +17,15 @@ type AccessToken struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
+type Developer struct {
+	ID         int32  `json:"id"`
+	Name       string `json:"name"`
+	Title      string `json:"title"`
+	Picture    string `json:"picture"`
+	Email      string `json:"email"`
+	GithubLink string `json:"githubLink"`
+}
+
 type IpoHistory struct {
 	ID        uuid.UUID `json:"id"`
 	User      uuid.UUID `json:"user"`

@@ -26,3 +26,6 @@ SELECT balance FROM users WHERE id = $1;
 
 -- name: UpdateBalance :exec
 UPDATE users SET balance = balance + $1 WHERE id = $2;
+
+-- name: GetDevelopers :many
+SELECT * FROM developers ORDER BY id;

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
 	coursecodes "github.com/Boolean-Autocrat/stock-simulator-backend/api/courseCodes"
+	"github.com/Boolean-Autocrat/stock-simulator-backend/api/developers"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/ipo"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/leaderboard"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/market"
@@ -114,6 +115,7 @@ func main() {
 	marketService := market.NewService(queries, channelRabbitMQ)
 	courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
+	developersService := developers.NewService(queries)
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
@@ -138,6 +140,7 @@ func main() {
 	marketService.RegisterHandlers(usersGroup)
 	courseService.RegisterHandlers(usersGroup)
 	ipoService.RegisterHandlers(usersGroup)
+	developersService.RegisterHandlers(usersGroup)
 
 	router.Run()
 }
