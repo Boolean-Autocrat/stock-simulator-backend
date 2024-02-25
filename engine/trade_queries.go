@@ -22,14 +22,6 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 		panic(tradeErr)
 	}
 	queries.BeginTransaction(context.Background())
-	buyerBalanceErr := queries.UpdateBalance(context.Background(), db.UpdateBalanceParams{
-		ID:      Trade.BuyerID,
-		Balance: float32(-Trade.Amount) * Trade.Price,
-	})
-	if buyerBalanceErr != nil {
-		log.Println(buyerBalanceErr.Error())
-		panic(buyerBalanceErr)
-	}
 	sellerBalanceErr := queries.UpdateBalance(context.Background(), db.UpdateBalanceParams{
 		ID:      Trade.SellerID,
 		Balance: float32(Trade.Amount) * Trade.Price,
@@ -46,15 +38,6 @@ func RunTradeQueries(Trade Trade, queries *db.Queries) {
 	if buyerPortfolioErr != nil {
 		log.Println(buyerPortfolioErr.Error())
 		panic(buyerPortfolioErr)
-	}
-	sellerPortfolioErr := queries.AddOrUpdateStockToPortfolio(context.Background(), db.AddOrUpdateStockToPortfolioParams{
-		User:     Trade.SellerID,
-		Stock:    Trade.Stock,
-		Quantity: -Trade.Amount,
-	})
-	if sellerPortfolioErr != nil {
-		log.Println(sellerPortfolioErr.Error())
-		panic(sellerPortfolioErr)
 	}
 	queries.EndTransaction(context.Background())
 	stock, _ := queries.GetStockById(context.Background(), Trade.Stock)
