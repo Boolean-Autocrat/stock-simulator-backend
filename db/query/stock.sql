@@ -7,6 +7,9 @@ SELECT * FROM stocks WHERE name = $1 AND is_crypto = $2 AND is_stock = $3 AND sy
 -- name: GetStockById :one
 SELECT * FROM stocks WHERE id = $1;
 
+-- name: GetStockPrice :one
+SELECT price FROM stocks WHERE id = $1;
+
 -- name: GetStocks :many
 SELECT * FROM stocks;
 

@@ -1,7 +1,11 @@
 package stocks
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
+	"net/http"
+	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
 	"github.com/gin-gonic/gin"
@@ -21,6 +25,7 @@ func (s *Service) RegisterHandlers(router *gin.RouterGroup) {
 	router.GET("/stocks/watchlist", s.GetWatchlist)
 	router.POST("/stocks/watchlist", s.AddToWatchlist)
 	router.GET("/stocks/:id", s.GetStock)
+	router.GET("/stocks/:id/stream", s.GetStockPriceStream)
 	router.GET("/stocks/trending", s.GetTrendingStocks)
 	router.GET("/stocks/search", s.SearchStocks)
 	router.GET("/stocks/:id/price_history", s.GetStockPriceHistory)
@@ -50,6 +55,63 @@ func (s *Service) GetStock(c *gin.Context) {
 	}
 
 	c.JSON(200, stock)
+}
+
+func (s *Service) GetStockPriceStream(c *gin.Context) {
+	idStr := c.Param("id")
+	stockID, err := uuid.Parse(idStr)
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid stock ID"})
+		return
+	}
+
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		c.JSON(500, gin.H{"error": "Streaming unsupported!"})
+		return
+	}
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+
+	priceChan := make(chan float32)
+
+	go s.StockPriceStream(c, priceChan, stockID)
+
+	for price := range priceChan {
+		event, err := json.Marshal(gin.H{"price": price})
+		if err != nil {
+			log.Print(err.Error())
+			c.JSON(500, gin.H{"error": "Internal server error."})
+			return
+		}
+		fmt.Fprintf(c.Writer, "data: %s\n\n", event)
+		flusher.Flush()
+	}
+}
+
+func (s *Service) StockPriceStream(c *gin.Context, priceCh chan<- float32, stockID uuid.UUID) bool {
+	ticker := time.NewTicker(2 * time.Second)
+
+outerloop:
+	for {
+		select {
+		case <-c.Done():
+			break outerloop
+		case <-ticker.C:
+			price, err := s.queries.GetStockPrice(c, stockID)
+			if err != nil {
+				log.Print(err.Error())
+				break outerloop
+			}
+			priceCh <- price
+		}
+	}
+
+	ticker.Stop()
+
+	close(priceCh)
+	return true
 }
 
 func (s *Service) GetStocks(c *gin.Context) {

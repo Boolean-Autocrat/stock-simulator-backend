@@ -170,11 +170,6 @@ func (s *Service) GoogleCallback(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create access token"})
 		return
 	}
-	if err != nil {
-		log.Println(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create refresh token"})
-		return
-	}
 
 	returnParams := gin.H{
 		"accessToken": token.AccessToken,
