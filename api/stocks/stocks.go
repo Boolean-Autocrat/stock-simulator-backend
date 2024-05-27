@@ -80,6 +80,10 @@ func (s *Service) GetStockPriceStream(c *gin.Context) {
 	}
 
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	flusher.Flush()
+
 	log.Printf("Streaming stock price for stock %s", stockID.String())
 
 	priceChan := make(chan float32)
