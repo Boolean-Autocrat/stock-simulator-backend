@@ -1,6 +1,7 @@
 package stocks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -87,44 +88,65 @@ func (s *Service) GetStockPriceStream(c *gin.Context) {
 	log.Printf("Streaming stock price for stock %s", stockID.String())
 
 	priceChan := make(chan float32)
+	ctx, cancel := context.WithCancel(c)
 
-	go s.StockPriceStream(c, priceChan, stockID)
+	go func() {
+		defer close(priceChan)
+		s.StockPriceStream(ctx, priceChan, stockID)
+	}()
 
-	for price := range priceChan {
-		event, err := json.Marshal(gin.H{"price": price})
-		if err != nil {
-			log.Print(err.Error())
-			c.JSON(500, gin.H{"error": "Internal server error."})
+	for {
+		select {
+		case price, ok := <-priceChan:
+			if !ok {
+				return
+			}
+
+			event, err := json.Marshal(gin.H{"price": price})
+			if err != nil {
+				log.Print(err.Error())
+				c.JSON(500, gin.H{"error": "Internal server error."})
+				return
+			}
+			_, err = fmt.Fprintf(c.Writer, "data: %s\n\n", event)
+			if err != nil {
+				log.Print("Error writing response:", err)
+				cancel()
+				return
+			}
+			flusher.Flush()
+			log.Printf("Sent price update: %f", price)
+
+		case <-c.Done():
+			log.Print("Client disconnected")
+			cancel()
 			return
 		}
-		log.Print(event)
-		fmt.Fprintf(c.Writer, "data: %s\n\n", event)
-		flusher.Flush()
 	}
 }
 
-func (s *Service) StockPriceStream(c *gin.Context, priceCh chan<- float32, stockID uuid.UUID) bool {
+func (s *Service) StockPriceStream(ctx context.Context, priceCh chan<- float32, stockID uuid.UUID) {
 	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
 
-outerloop:
 	for {
 		select {
-		case <-c.Done():
-			break outerloop
+		case <-ctx.Done():
+			log.Print("Context done, stopping price stream")
+			return
 		case <-ticker.C:
-			price, err := s.queries.GetStockPrice(c, stockID)
+			price, err := s.queries.GetStockPrice(ctx, stockID)
 			if err != nil {
 				log.Print(err.Error())
-				break outerloop
+				return
 			}
-			priceCh <- price
+			select {
+			case priceCh <- price:
+			case <-ctx.Done():
+				return
+			}
 		}
 	}
-
-	ticker.Stop()
-
-	close(priceCh)
-	return true
 }
 
 func (s *Service) GetStocks(c *gin.Context) {
