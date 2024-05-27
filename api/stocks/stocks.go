@@ -1,11 +1,8 @@
 package stocks
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
+	"io"
 	"log"
-	"net/http"
 	"time"
 
 	db "github.com/Boolean-Autocrat/stock-simulator-backend/db/sqlc"
@@ -67,12 +64,6 @@ func (s *Service) GetStockPriceStream(c *gin.Context) {
 		return
 	}
 
-	flusher, ok := c.Writer.(http.Flusher)
-	if !ok {
-		c.JSON(500, gin.H{"error": "Streaming unsupported!"})
-		return
-	}
-
 	_, err = s.queries.GetStockById(c, stockID)
 	if err != nil {
 		log.Print(err.Error())
@@ -83,71 +74,122 @@ func (s *Service) GetStockPriceStream(c *gin.Context) {
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
-	flusher.Flush()
 
 	log.Printf("Streaming stock price for stock %s", stockID.String())
 
-	priceChan := make(chan float32)
-	ctx, cancel := context.WithCancel(c)
-
+	chanStream := make(chan float32)
 	go func() {
-		defer close(priceChan)
-		s.StockPriceStream(ctx, priceChan, stockID)
-	}()
-
-	for {
-		select {
-		case price, ok := <-priceChan:
-			if !ok {
-				return
-			}
-
-			event, err := json.Marshal(gin.H{"price": price})
+		defer close(chanStream)
+		for {
+			price, err := s.queries.GetStockPrice(c, stockID)
 			if err != nil {
 				log.Print(err.Error())
-				c.JSON(500, gin.H{"error": "Internal server error."})
 				return
 			}
-			_, err = fmt.Fprintf(c.Writer, "data: %s\n\n", event)
-			if err != nil {
-				log.Print("Error writing response:", err)
-				cancel()
-				return
-			}
-			flusher.Flush()
+			chanStream <- price
 			log.Printf("Sent price update: %f", price)
-
-		case <-c.Done():
-			log.Print("Client disconnected")
-			cancel()
-			return
+			time.Sleep(2 * time.Second)
 		}
-	}
+	}()
+	c.Stream(func(w io.Writer) bool {
+		if msg, ok := <-chanStream; ok {
+			c.SSEvent("price", msg)
+			return true
+		}
+		return false
+	})
 }
 
-func (s *Service) StockPriceStream(ctx context.Context, priceCh chan<- float32, stockID uuid.UUID) {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+// func (s *Service) GetStockPriceStream(c *gin.Context) {
+// 	idStr := c.Param("id")
+// 	stockID, err := uuid.Parse(idStr)
+// 	if err != nil {
+// 		log.Print(err.Error())
+// 		c.JSON(400, gin.H{"error": "Invalid stock ID"})
+// 		return
+// 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			log.Print("Context done, stopping price stream")
-			return
-		case <-ticker.C:
-			price, err := s.queries.GetStockPrice(ctx, stockID)
-			if err != nil {
-				log.Print(err.Error())
-				return
-			}
-			select {
-			case priceCh <- price:
-			case <-ctx.Done():
-				return
-			}
-		}
-	}
-}
+// 	flusher, ok := c.Writer.(http.Flusher)
+// 	if !ok {
+// 		c.JSON(500, gin.H{"error": "Streaming unsupported!"})
+// 		return
+// 	}
+
+// 	_, err = s.queries.GetStockById(c, stockID)
+// 	if err != nil {
+// 		log.Print(err.Error())
+// 		c.JSON(400, gin.H{"error": "Invalid stock ID"})
+// 		return
+// 	}
+
+// 	c.Writer.Header().Set("Content-Type", "text/event-stream")
+// 	c.Writer.Header().Set("Cache-Control", "no-cache")
+// 	c.Writer.Header().Set("Connection", "keep-alive")
+// 	flusher.Flush()
+
+// 	log.Printf("Streaming stock price for stock %s", stockID.String())
+
+// 	priceChan := make(chan float32)
+// 	ctx, cancel := context.WithCancel(c)
+
+// 	go func() {
+// 		defer close(priceChan)
+// 		s.StockPriceStream(ctx, priceChan, stockID)
+// 	}()
+
+// 	for {
+// 		select {
+// 		case price, ok := <-priceChan:
+// 			if !ok {
+// 				return
+// 			}
+
+// 			event, err := json.Marshal(gin.H{"price": price})
+// 			if err != nil {
+// 				log.Print(err.Error())
+// 				c.JSON(500, gin.H{"error": "Internal server error."})
+// 				return
+// 			}
+// 			_, err = fmt.Fprintf(c.Writer, "data: %s\n\n", event)
+// 			if err != nil {
+// 				log.Print("Error writing response:", err)
+// 				cancel()
+// 				return
+// 			}
+// 			flusher.Flush()
+// 			log.Printf("Sent price update: %f", price)
+
+// 		case <-c.Done():
+// 			log.Print("Client disconnected")
+// 			cancel()
+// 			return
+// 		}
+// 	}
+// }
+
+// func (s *Service) StockPriceStream(ctx context.Context, priceCh chan<- float32, stockID uuid.UUID) {
+// 	ticker := time.NewTicker(2 * time.Second)
+// 	defer ticker.Stop()
+
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			log.Print("Context done, stopping price stream")
+// 			return
+// 		case <-ticker.C:
+// 			price, err := s.queries.GetStockPrice(ctx, stockID)
+// 			if err != nil {
+// 				log.Print(err.Error())
+// 				return
+// 			}
+// 			select {
+// 			case priceCh <- price:
+// 			case <-ctx.Done():
+// 				return
+// 			}
+// 		}
+// 	}
+// }
 
 func (s *Service) GetStocks(c *gin.Context) {
 	stocks, err := s.queries.GetStocks(c)
