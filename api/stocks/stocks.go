@@ -72,7 +72,15 @@ func (s *Service) GetStockPriceStream(c *gin.Context) {
 		return
 	}
 
+	_, err = s.queries.GetStockById(c, stockID)
+	if err != nil {
+		log.Print(err.Error())
+		c.JSON(400, gin.H{"error": "Invalid stock ID"})
+		return
+	}
+
 	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	log.Printf("Streaming stock price for stock %s", stockID.String())
 
 	priceChan := make(chan float32)
 
@@ -85,6 +93,7 @@ func (s *Service) GetStockPriceStream(c *gin.Context) {
 			c.JSON(500, gin.H{"error": "Internal server error."})
 			return
 		}
+		log.Print(event)
 		fmt.Fprintf(c.Writer, "data: %s\n\n", event)
 		flusher.Flush()
 	}
