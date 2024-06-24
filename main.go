@@ -7,7 +7,6 @@ import (
 	_ "time/tzdata"
 
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/admin"
-	coursecodes "github.com/Boolean-Autocrat/stock-simulator-backend/api/courseCodes"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/developers"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/ipo"
 	"github.com/Boolean-Autocrat/stock-simulator-backend/api/leaderboard"
@@ -113,7 +112,6 @@ func main() {
 	portfolioService := portfolio.NewService(queries)
 	leaderboardService := leaderboard.NewService(queries)
 	marketService := market.NewService(queries, channelRabbitMQ)
-	courseService := coursecodes.NewService(queries)
 	ipoService := ipo.NewService(queries)
 	developersService := developers.NewService(queries)
 
@@ -138,7 +136,6 @@ func main() {
 	portfolioService.RegisterHandlers(usersGroup)
 	leaderboardService.RegisterHandlers(usersGroup)
 	marketService.RegisterHandlers(usersGroup)
-	courseService.RegisterHandlers(usersGroup)
 	ipoService.RegisterHandlers(usersGroup)
 	developersService.RegisterHandlers(usersGroup)
 
