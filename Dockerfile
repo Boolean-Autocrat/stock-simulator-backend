@@ -1,31 +1,60 @@
-# Build stage
-FROM golang:1.21-alpine3.19 AS builder
+# syntax=docker/dockerfile:1
+
+ARG GO_VERSION=1.22
+ARG ALPINE_VERSION=3.20
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
 WORKDIR /app
-COPY . .
-RUN go mod download
 
-ENV CGO_ENABLED=0 GOOS=linux GOARCH=amd64
-RUN go build -ldflags="-s -w" -o main main.go
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=go.sum,target=go.sum \
+    --mount=type=bind,source=go.mod,target=go.mod \
+    go mod download -x
 
-RUN apk --no-cache add curl
-RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz
+ARG TARGETARCH
 
-# Run stage
-FROM alpine:3.19
-RUN apk update && apk add gcc g++ libc-dev librdkafka-dev pkgconf
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,target=. \
+    CGO_ENABLED=0 GOARCH=$TARGETARCH go build -ldflags="-s -w" -o /bin/server .
+
+
+FROM alpine:latest AS final
+
+RUN --mount=type=cache,target=/var/cache/apk \
+    apk --update add \
+        ca-certificates \
+        tzdata \
+        && \
+        update-ca-certificates \
+        && \
+        apk add --no-cache curl \
+        && \
+        apk add gcc g++ libc-dev librdkafka-dev pkgconf
+
+ARG UID=10001
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    appuser
+
 WORKDIR /app
-COPY --from=builder /app/main .
-COPY --from=builder /app/migrate.linux-amd64 ./migrate
+COPY --from=build /bin/server /app/server
 COPY .env .
 COPY start.sh .
 COPY wait-for-it.sh .
-COPY templates /app/templates
-COPY assets /app/assets
-COPY courseCodes.json .
-RUN chmod +x start.sh
-RUN chmod +x wait-for-it.sh
 COPY db/migrations ./migration
 
+RUN chmod +x start.sh
+RUN chmod +x wait-for-it.sh
+
+RUN curl -L https://github.com/golang-migrate/migrate/releases/download/v4.17.1/migrate.linux-amd64.tar.gz | tar xvz
+
 EXPOSE 3000
-CMD [ "/app/main" ]
+
+USER appuser
+
 ENTRYPOINT [ "/app/start.sh" ]
+CMD [ "/app/server" ]

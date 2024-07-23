@@ -15,7 +15,7 @@ services:
       retries: 3
 
   postgres:
-    image: postgres:16-alpine3.19
+    image: postgres:16-alpine3.20
     restart: always
     environment:
       - POSTGRES_HOST=postgres
@@ -42,7 +42,7 @@ services:
       - rabbitmq
       - postgres
     entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "/app/start.sh"]
-    command: ["/app/main"]
+    command: ["/app/server"]
 
 volumes:
   rabbitmq_data:
