@@ -2,7 +2,7 @@
 
 This is the backend for a stock simulator app, which was originally meant to be released during BITS Pilani's Apogee '24.
 
-It is a **full-fledged real-time stock simulator** that uses RabbitMQ for in-memory trade transactions and psql for persistent storage. It is written in Go using the Gin web framework.
+It is a **full-fledged real-time stock simulator** that uses RabbitMQ for in-memory trade transactions and pgsql for persistent storage. It is written in Go using the Gin web framework.
 
 The existing engine processes limit buy and limit sell orders. It also has a simple frontend for adding and viewing stocks and news articles (which would eventually be used to simulate stock prices).
 
