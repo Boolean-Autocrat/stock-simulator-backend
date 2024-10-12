@@ -46,7 +46,7 @@ func (s *Service) AdminMiddleware() gin.HandlerFunc {
 
 func (s *Service) TokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.FullPath() == "/courses" || c.FullPath() == "/auth/google/login" || c.FullPath() == "/auth/google/callback" {
+		if c.FullPath() == "/auth/google/login" || c.FullPath() == "/auth/google/callback" {
 			c.Next()
 			return
 		}
